@@ -9,15 +9,15 @@
 
 library(shiny)
 library(shinyWidgets)
-library(tidyverse)
+library(ggplot2)
 library(lubridate)
 library(cowplot)
 library(colorspace)
-library(countrycode)
-library(ggrepel)
 library(tidycensus)
 library(scales)
-library(grid)
+library(shinycssloaders)
+
+options(spinner.color="#3e5fff")
 
 all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","American Samoa" = "AS", "Arizona" = "AZ", 
                     "California" = "CA", "Colorado" = "CO", "Connecticut" = "CT", "District of Columbia" = "DC",
@@ -41,11 +41,12 @@ all.series <- list('Confirmed Positive' = 'positive',
                    'Total Tests' = 'totalTestResults')
 
 all.transformations <- list('None' = 'none', 
-                            'Log 10' = 'log10', 
+                            'Log10' = 'log10', 
                             'Natural log' = 'log', 
                             'Square root' = 'sqrt')
 
 state.df <- read_csv('http://covidtracking.com/api/states/daily.csv')
+state.df$dateChecked <- date(state.df$dateChecked)
 
 colors <- hue_pal()(length(unique(state.df$state)))
 colors.list <- list()
@@ -59,31 +60,68 @@ ui <- fluidPage(
     
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
-        sidebarPanel(
-            pickerInput("stateChoice", h3("States"), 
-                        options = list(`actions-box` = TRUE),
-                        multiple = TRUE,
-                        choices = all.choices,
-                        selected = all.choices),
-            pickerInput("highlightSet", h3("Highlight"), 
-                        options = list(`actions-box` = TRUE),
-                        multiple = TRUE,
-                        choices = all.choices,
-                        selected = NULL),
-            pickerInput("seriesChoice", h3("Data"), 
-                        options = list(`actions-box` = TRUE),
-                        choices = all.series,
-                        selected = all.series[1]),
-            pickerInput("transformation", h3("Transformation"), 
-                        options = list(`actions-box` = TRUE),
-                        choices = all.transformations,
-                        selected = all.transformations[1])
+        sidebarPanel(width = 5,
+                     div(style = 'margin-top: -10px; margin-bottom: 0px',
+                         fluidRow(
+                             column(6,
+                                    radioButtons("align", 
+                                                 h4("Align"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
+                             ),
+                             column(6,
+                                    numericInput("num_align", 
+                                                 h4("Align Number"), 
+                                                 value = 0)
+                             ) 
+                         ),
+                         fluidRow(
+                             column(6,
+                                    pickerInput("stateChoice", 
+                                                h4("States"), 
+                                                options = list(`actions-box` = TRUE),
+                                                multiple = TRUE,
+                                                choices = all.choices,
+                                                selected = all.choices
+                                    )
+                             ),
+                             column(6,
+                                    pickerInput("highlightSet", 
+                                                h4("Highlights"), 
+                                                options = list(`actions-box` = TRUE),
+                                                multiple = TRUE,
+                                                choices = all.choices,
+                                                selected = NULL)
+                             )
+                         ),
+                         fluidRow(
+                             column(6,
+                                    pickerInput("seriesChoice", 
+                                                h4("Data"), 
+                                                options = list(`actions-box` = TRUE),
+                                                choices = all.series,
+                                                selected = all.series[1])),
+                             column(6,
+                                    pickerInput("transformation", 
+                                                h4("Transform"), 
+                                                options = list(`actions-box` = TRUE),
+                                                choices = all.transformations,
+                                                selected = all.transformations[1])
+                             )
+                         ),
+                         fluidRow(
+                             column(12, align = 'center',
+                                    actionButton("do", "Build Plot")
+                             )
+                         )
+                     )
         ),
         # Show a plot of the generated distribution
-        mainPanel(
-            plotOutput("casesPlot"),
-            hr(),
-            'Data from: http://covidtracking.com/'
+        mainPanel(width = 7,
+                  plotOutput("casesPlot") %>% withSpinner(),
+                  hr(),
+                  'Data from: http://covidtracking.com/'
         )
     )
 )
@@ -91,15 +129,31 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     
-    inputData <- reactive({
+    inputData <- eventReactive(input$do, {
         list(state = input$stateChoice,
              series = input$seriesChoice,
              transformation = input$transformation,
-             highlights = input$highlightSet)
+             highlights = input$highlightSet,
+             align = input$align,
+             num_align = input$num_align)
     })
     
     renderCases <- function() {
+        
+        s <- inputData()$series
+        
         local.df <- state.df[state.df$state %in% inputData()$state, ]
+        
+        if(inputData()$align) {
+            start_dates <- local.df %>% 
+                group_by(state) %>% 
+                summarise(start_date = min(dateChecked[.data[[s]] >= as.numeric(inputData()$num_align)], na.rm = TRUE))
+            local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$dateChecked[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+            local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
+            local.df <- local.df %>% group_by(state) %>% mutate(dateChecked = dateChecked - min(dateChecked))
+        }
+        
+        print(local.df)
         
         local.colors <- unlist(colors.list[unique(local.df$state)])
         if(length(local.colors) == 0){local.colors <- colors[1]}
@@ -137,7 +191,29 @@ server <- function(input, output) {
                 legend.title = element_blank()
             )
         
-        s <- inputData()$series
+        p <- p +
+            geom_line(data = local.df[!(local.df$state %in% highlights), ], 
+                      aes(x = dateChecked, y = .data[[s]], color = state), 
+                      size = 1.1, 
+                      alpha = 0.25) +
+            geom_point(data = local.df[!(local.df$state %in% highlights), ], 
+                       aes(x = dateChecked, y = .data[[s]], color = state, fill = state), 
+                       size = 3.5, 
+                       alpha = 0.5) +
+            geom_line(data = local.df[local.df$state %in% highlights, ], 
+                      aes(x = dateChecked, y = .data[[s]], color = state), 
+                      size = 1.1, 
+                      alpha = 0.5) +
+            geom_point(data = local.df[local.df$state %in% highlights, ],
+                       aes(x = dateChecked, y = .data[[s]], color = state, fill = state), 
+                       size = 3.5, 
+                       alpha = 0.75)
+        
+        if(inputData()$transformation != 'none')
+            p <- p + scale_y_continuous(trans = inputData()$transformation)
+        
+        if(inputData()$align)
+            p <- p + xlab(paste('Days since alignment number'))
         
         if(s == 'positive')
             p <- p + ylab('Number of COVID-19 positive tests')
@@ -152,84 +228,7 @@ server <- function(input, output) {
         if(s == 'totalTestResults')
             p <- p + ylab('Number of COVID-19 tests run')
         
-        if( inputData()$transformation == 'none' ){
-            p <- p +
-                geom_line(data = local.df[!(local.df$state %in% highlights), ], 
-                          aes(x = dateChecked, y = .data[[s]], color = state), 
-                          size = 1.1, 
-                          alpha = 0.25) +
-                geom_point(data = local.df[!(local.df$state %in% highlights), ], 
-                           aes(x = dateChecked, y = .data[[s]], color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.5) +
-                geom_line(data = local.df[local.df$state %in% highlights, ], 
-                          aes(x = dateChecked, y = .data[[s]], color = state), 
-                          size = 1.1, 
-                          alpha = 0.5) +
-                geom_point(data = local.df[local.df$state %in% highlights, ],
-                           aes(x = dateChecked, y = .data[[s]], color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.75)
-        }
-        if( inputData()$transformation == 'log10' ){
-            p <- p +
-                geom_line(data = local.df[!(local.df$state %in% highlights), ], 
-                          aes(x = dateChecked, y = log10(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.25) +
-                geom_point(data = local.df[!(local.df$state %in% highlights), ], 
-                           aes(x = dateChecked, y = log10(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.5) +
-                geom_line(data = local.df[local.df$state %in% highlights, ], 
-                          aes(x = dateChecked, y = log10(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.5) +
-                geom_point(data = local.df[local.df$state %in% highlights, ],
-                           aes(x = dateChecked, y = log10(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.75)
-        }
-        if( inputData()$transformation == 'log' ){
-            p <- p +
-                geom_line(data = local.df[!(local.df$state %in% highlights), ], 
-                          aes(x = dateChecked, y = log(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.25) +
-                geom_point(data = local.df[!(local.df$state %in% highlights), ], 
-                           aes(x = dateChecked, y = log(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.5) +
-                geom_line(data = local.df[local.df$state %in% highlights, ], 
-                          aes(x = dateChecked, y = log(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.5) +
-                geom_point(data = local.df[local.df$state %in% highlights, ],
-                           aes(x = dateChecked, y = log(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.75)
-        }
-        if( inputData()$transformation == 'sqrt' ){
-            p <- p + 
-                geom_line(data = local.df[!(local.df$state %in% highlights), ], 
-                          aes(x = dateChecked, y = sqrt(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.25) +
-                geom_point(data = local.df[!(local.df$state %in% highlights), ], 
-                           aes(x = dateChecked, y = sqrt(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.5) +
-                geom_line(data = local.df[local.df$state %in% highlights, ], 
-                          aes(x = dateChecked, y = sqrt(.data[[s]]), color = state), 
-                          size = 1.1, 
-                          alpha = 0.5) +
-                geom_point(data = local.df[local.df$state %in% highlights, ],
-                           aes(x = dateChecked, y = sqrt(.data[[s]]), color = state, fill = state), 
-                           size = 3.5, 
-                           alpha = 0.75)
-        }
-        
-        show(p)
+        print(p)
     }
     output$casesPlot <- renderPlot(renderCases())
 }
