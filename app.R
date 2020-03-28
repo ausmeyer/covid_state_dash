@@ -119,11 +119,11 @@ ui <- fluidPage(
         ),
         # Show a plot of the generated distribution
         mainPanel(width = 7,
-                  plotOutput("casesPlot") %>% withSpinner(),
-                  hr(),
-                  'Data from: http://covidtracking.com/'
+                  plotOutput("casesPlot") %>% withSpinner()
         )
-    )
+    ),
+    hr(),
+    "To construct a chart click the 'Build Plot' button. The 'Align' option will align each state with Day 0 as the first day that each had at least 'Align Number' number of cases. Data from: http://covidtracking.com/"
 )
 
 # Define server logic required to draw a histogram
