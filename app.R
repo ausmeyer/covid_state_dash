@@ -9,7 +9,7 @@
 
 library(shiny)
 library(shinyWidgets)
-library(ggplot2)
+library(tidyverse)
 library(lubridate)
 library(cowplot)
 library(colorspace)
