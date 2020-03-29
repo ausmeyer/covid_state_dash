@@ -204,16 +204,22 @@ server <- function(input, output) {
                        color = state,
                        fill = state)) -> p
         
+        if(these.data$transformation != 'none')
+            p <- p + scale_y_continuous(trans = these.data$transformation)
+        
         if(as.logical(these.data$facet)) {
             p <- p + facet_rep_wrap(~state, scales = "fixed", repeat.tick.labels = FALSE) +
                 theme_minimal_hgrid(9, rel_small = 1) +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                      legend.position = "right",
+                theme(legend.position = "right",
                       legend.justification = "left",
                       legend.text = element_text(size = 9),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank(),
-                      panel.spacing.x = unit(0.75, "lines")
+                      panel.spacing.x = unit(0.75, "lines"),
+                      axis.text.x = element_text(angle = 90, hjust = 1),
+                      axis.title = element_text(size = 12),
+                      axis.title.x = element_text(margin = unit(c(3, 0, 0, 0), "mm")),
+                      axis.title.y = element_text(margin = unit(c(0, 3, 0, 0), "mm"))
                 ) 
             point.size <- 1.5
             line.size <- 1.0
@@ -302,9 +308,6 @@ server <- function(input, output) {
         #             legend.title = element_blank()
         #         ) -> p
         # }
-        
-        if(these.data$transformation != 'none')
-            p <- p + scale_y_continuous(trans = these.data$transformation)
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
