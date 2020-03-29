@@ -34,11 +34,16 @@ all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","Americ
 )
 
 all.series <- list('Confirmed Positive' = 'positive', 
+                   'Daily Increase Positive' = 'positiveIncrease',
                    'Confirmed Negative' = 'negative', 
-                   'Pending Tests' = 'pending', 
+                   'Daily Increase Negative' = 'negativeIncrease',
                    'Hospitalized' = 'hospitalized', 
+                   'Daily Increase Hospitalized' = 'hospitalizedIncrease',
                    'Deaths' = 'death', 
-                   'Total Tests' = 'totalTestResults')
+                   'Daily Increase Deaths' = 'deathIncrease',
+                   'Total Tests' = 'totalTestResults',
+                   'Daily Increase Tests' = 'totalTestResultsIncrease',
+                   'Pending Tests' = 'pending')
 
 all.transformations <- list('None' = 'none', 
                             'Log10' = 'log10', 
