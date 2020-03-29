@@ -34,15 +34,15 @@ all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","Americ
 )
 
 all.series <- list('Confirmed Positive' = 'positive', 
-                   'Daily Increase Positive' = 'positiveIncrease',
+                   'Daily Increase in Positives' = 'positiveIncrease',
                    'Confirmed Negative' = 'negative', 
-                   'Daily Increase Negative' = 'negativeIncrease',
+                   'Daily Increase in Negatives' = 'negativeIncrease',
                    'Hospitalized' = 'hospitalized', 
-                   'Daily Increase Hospitalized' = 'hospitalizedIncrease',
+                   'Daily Increase in Hospitalizations' = 'hospitalizedIncrease',
                    'Deaths' = 'death', 
-                   'Daily Increase Deaths' = 'deathIncrease',
+                   'Daily Increase in Deaths' = 'deathIncrease',
                    'Total Tests' = 'totalTestResults',
-                   'Daily Increase Tests' = 'totalTestResultsIncrease',
+                   'Daily Increase in Tests' = 'totalTestResultsIncrease',
                    'Pending Tests' = 'pending')
 
 all.transformations <- list('None' = 'none', 
@@ -232,6 +232,16 @@ server <- function(input, output) {
             p <- p + ylab('Number of COVID-19 deaths')
         if(s == 'totalTestResults')
             p <- p + ylab('Number of COVID-19 tests run')
+        if(s == 'positiveIncrease')
+            p <- p + ylab('Daily increase in number of COVID-19 positive tests')
+        if(s == 'negativeIncrease')
+            p <- p + ylab('Daily increase in number of COVID-19 negative tests')
+        if(s == 'hospitalizedIncrease')
+            p <- p + ylab('Daily increase in number of COVID-19 hospitalized patients')
+        if(s == 'deathIncrease')
+            p <- p + ylab('Daily increase in number of COVID-19 deaths')
+        if(s == 'totalTestResultsIncrease')
+            p <- p + ylab('Daily increase in number of COVID-19 tests run')
         
         print(p)
     }
