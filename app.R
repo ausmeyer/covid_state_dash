@@ -12,6 +12,7 @@ library(shinyWidgets)
 library(tidyverse)
 library(lubridate)
 library(cowplot)
+library(lemon)
 library(colorspace)
 library(scales)
 library(shinycssloaders)
@@ -204,7 +205,7 @@ server <- function(input, output) {
                        fill = state)) -> p
         
         if(as.logical(these.data$facet)) {
-            p <- p + facet_wrap(vars(state)) +
+            p <- p + facet_rep_wrap(~state, scales = "fixed", repeat.tick.labels = FALSE) +
                 theme_minimal_hgrid(9, rel_small = 1) +
                 theme(axis.text.x = element_text(angle = 90, hjust = 1),
                       legend.position = "right",
@@ -212,8 +213,7 @@ server <- function(input, output) {
                       legend.text = element_text(size = 9),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank(),
-                      panel.spacing.x = unit(0.75, "lines"),
-                      axis.line = element_line()
+                      panel.spacing.x = unit(0.75, "lines")
                 ) 
             point.size <- 1.5
             line.size <- 1.0
