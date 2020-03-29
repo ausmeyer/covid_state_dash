@@ -138,7 +138,7 @@ ui <- fluidPage(
         ),
         # Show a plot of the generated distribution
         mainPanel(width = 8,
-                  plotOutput("casesPlot", height = 475) %>% withSpinner()
+                  plotOutput("casesPlot", height = 600) %>% withSpinner()
         )
     ),
     hr(),
