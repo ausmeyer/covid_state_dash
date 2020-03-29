@@ -142,7 +142,7 @@ ui <- fluidPage(
     ),
     hr(),
     
-    plotOutput('mapPlot', height = 500) %>% withSpinner(),
+    plotOutput('mapPlot', height = 600) %>% withSpinner(),
     
     hr(),
     
