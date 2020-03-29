@@ -194,15 +194,43 @@ server <- function(input, output) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
         
+        point.size <- 3.5
+        line.size <- 1.1
+        
         local.df[!(local.df$state %in% highlights), ] %>%
             ggplot(aes(x = date, 
                        y = .data[[s]], 
                        color = state,
-                       fill = state,
-                       group = state)) + 
-            geom_line(size = 1.1, 
-                      alpha = 0.25) +
-            geom_point(size = 3.5, 
+                       fill = state)) -> p
+        
+        if(as.logical(these.data$facet)) {
+            p <- p + facet_wrap(vars(state)) +
+                theme_minimal_hgrid(9, rel_small = 1) +
+                theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                      legend.position = "right",
+                      legend.justification = "left",
+                      legend.text = element_text(size = 9),
+                      legend.box.spacing = unit(0, "pt"),
+                      legend.title = element_blank(),
+                      panel.spacing.x = unit(0.75, "lines")
+                ) 
+            point.size <- 1.5
+            line.size <- 1.0
+        }
+        
+        if(!as.logical(these.data$facet)) {
+            p <- p + theme_minimal_hgrid(12, rel_small = 1) +
+                theme(legend.position = "right",
+                      legend.justification = "left",
+                      legend.text = element_text(size = 9),
+                      legend.box.spacing = unit(0, "pt"),
+                      legend.title = element_blank()
+                ) 
+        }
+        
+        p <- p + geom_line(size = line.size, 
+                           alpha = 0.25) +
+            geom_point(size = point.size, 
                        alpha = 0.5) +
             xlab('') +
             scale_color_manual(
@@ -221,28 +249,20 @@ server <- function(input, output) {
                         shape = c(rep(21, length(unique(local.df$state))))
                     )
                 )
-            ) +
-            theme_minimal_hgrid(12, rel_small = 1) +
-            theme(
-                legend.position = "right",
-                legend.justification = "left",
-                legend.text = element_text(size = 9),
-                legend.box.spacing = unit(0, "pt"),
-                legend.title = element_blank()
-            ) -> p
+            )
         
         p <- p +
             geom_line(data = local.df[local.df$state %in% highlights, ],
                       aes(x = date,
                           y = .data[[s]],
                           color = state),
-                      size = 1.1,
+                      size = line.size,
                       alpha = 0.5) +
             geom_point(data = local.df[local.df$state %in% highlights, ],
                        aes(x = date,
                            y = .data[[s]],
                            color = state, fill = state),
-                       size = 3.5,
+                       size = point.size,
                        alpha = 0.75)
         
         ## Animation disabled for now
@@ -287,9 +307,6 @@ server <- function(input, output) {
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
-        
-        if(as.logical(these.data$facet))
-            p <- p + facet_wrap(vars(state))
         
         if(s == 'positive')
             p <- p + ylab('Number of COVID-19 positive tests')
