@@ -138,7 +138,7 @@ ui <- fluidPage(
         ),
         # Show a plot of the generated distribution
         mainPanel(width = 8,
-                  plotOutput("casesPlot", height = 600) %>% withSpinner()
+                  plotOutput("casesPlot", height = 750) %>% withSpinner()
         )
     ),
     hr(),
@@ -209,7 +209,7 @@ server <- function(input, output) {
         
         if(as.logical(these.data$facet)) {
             p <- p + facet_rep_wrap(~state, scales = "fixed", repeat.tick.labels = FALSE) +
-                theme_minimal_hgrid(9, rel_small = 1) +
+                theme_minimal_hgrid(8, rel_small = 1) +
                 theme(legend.position = "right",
                       legend.justification = "left",
                       legend.text = element_text(size = 9),
