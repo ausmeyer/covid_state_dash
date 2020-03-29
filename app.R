@@ -212,7 +212,8 @@ server <- function(input, output) {
                       legend.text = element_text(size = 9),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank(),
-                      panel.spacing.x = unit(0.75, "lines")
+                      panel.spacing.x = unit(0.75, "lines"),
+                      axis.line = element_line()
                 ) 
             point.size <- 1.5
             line.size <- 1.0
