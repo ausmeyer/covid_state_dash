@@ -166,9 +166,7 @@ ui <- fluidPage(
     The doubling time guides (called 'Doubling') can only be selected when 'Align' is selected, 
     Facet' is unselected and the Log10 y-axis is selected. The doubling time guides 
     display as 7 dashed lines; the steepest line is doubling every 1 day and the 
-    flattest is doubling every 7 days. I will eventually add annotations to them, 
-    but floating the angle correctly on the fly is non-trivial. 
-    They are calculated with Day 0 being the mean Day 0 for all currently selected data. 
+    flattest is doubling every 7 days. They are calculated with Day 0 being the mean Day 0 for all currently selected data. 
     As a result, aligning will significantly improve interpretability of the doubling guides.",
     br(),
     "Data from: ",
