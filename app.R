@@ -174,7 +174,7 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
     
     renderCases <- function(these.data) {
         
@@ -517,8 +517,14 @@ server <- function(input, output) {
     }) %>% debounce(1500)
     
     observe({
-        shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE')
+        inputData()
+        if(as.logical(input$facet) | input$transformation == 'none') {
+            updateRadioButtons(session, "exponentials",
+                               selected = list('No' = F))
+        }
     })
+    
+    observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE'))
     
     output$casesPlot <- renderPlot(renderCases(inputData()))
     output$mapPlot <- renderPlot(renderMap(inputData()))
