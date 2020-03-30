@@ -456,12 +456,10 @@ server <- function(input, output) {
                           align = input$align,
                           num_align = input$num_align,
                           facet = input$facet)
-    }) %>% debounce(1000)
+    }) %>% debounce(1500)
     
-    observeEvent(inputData(), {
-        output$casesPlot <- renderPlot(renderCases(inputData()))
-        output$mapPlot <- renderPlot(renderMap(inputData()))
-    })
+    output$casesPlot <- renderPlot(renderCases(inputData()))
+    output$mapPlot <- renderPlot(renderMap(inputData()))
 }
 
 # Run the application 
