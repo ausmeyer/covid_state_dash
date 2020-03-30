@@ -163,13 +163,13 @@ ui <- fluidPage(
     state into its own subplot; be careful with it because it could
     take some time to render. The map shows the most recent day's data.
     The y-axis transformation chosen will be applied to both the plot and the map. 
-    The doubling time guides (called 'Doubling') can only be selected when 'Facet' is unselected and 
-    the Log10 y-axis is selected. The doubling time guides display as 7 dashed lines;
-    the steepest line is doubling every 1 day and the flattest is doubling every 7 days. 
-    I will eventually add annotations to them, but floating the angle correctly on the 
-    fly is non-trivial. They are calculated with Day 0 being the mean Day 0 for 
-    all currently selected data. As a result, aligning will significantly improve 
-    interpretability of the doubling guides.
+    The doubling time guides (called 'Doubling') can only be selected when 'Align' is selected, 
+    Facet' is unselected and the Log10 y-axis is selected. The doubling time guides 
+    display as 7 dashed lines; the steepest line is doubling every 1 day and the 
+    flattest is doubling every 7 days. I will eventually add annotations to them, 
+    but floating the angle correctly on the fly is non-trivial. 
+    They are calculated with Day 0 being the mean Day 0 for all currently selected data. 
+    As a result, aligning will significantly improve interpretability of the doubling guides.
     Data from: http://covidtracking.com/"
 )
 
@@ -182,20 +182,6 @@ server <- function(input, output, session) {
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
-        date_seq <- 0:(max(local.df$date)-min(local.df$date))
-        ys <- lapply(1:7, function(x) doubling_time(mean(local.df[[s]][local.df$date == min(local.df$date)]), x, date_seq))
-        
-        exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 7),
-                         y = unlist(ys),
-                         ds = c(rep('1 day', length(date_seq)),
-                                rep('2 days', length(date_seq)),
-                                rep('3 days', length(date_seq)),
-                                rep('4 days', length(date_seq)),
-                                rep('5 days', length(date_seq)),
-                                rep('6 days', length(date_seq)),
-                                rep('7 days', length(date_seq))))
-        
-        
         if(as.logical(these.data$align)) {
             start_dates <- local.df %>% 
                 group_by(state) %>% 
@@ -203,17 +189,19 @@ server <- function(input, output, session) {
             local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
             
-            date_seq <- 0:(max(local.df$date)-min(local.df$date))
-            ys <- lapply(1:7, function(x) doubling_time(mean(local.df[[s]][local.df$date == min(local.df$date)]), x, date_seq))
+            start <- mean(local.df[[s]][local.df$date == min(local.df$date)])
+            if(start == 0)
+                start <- 1
             
-            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 7),
+            date_seq <- 0:(max(local.df$date) - min(local.df$date))
+            ys <- lapply(c(1, 2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
+        
+            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 5),
                              y = unlist(ys),
                              ds = c(rep('1 day', length(date_seq)),
                                     rep('2 days', length(date_seq)),
                                     rep('3 days', length(date_seq)),
-                                    rep('4 days', length(date_seq)),
                                     rep('5 days', length(date_seq)),
-                                    rep('6 days', length(date_seq)),
                                     rep('7 days', length(date_seq))))
             
             exp.df$date <- exp.df$date - min(local.df$date)
@@ -282,29 +270,54 @@ server <- function(input, output, session) {
                                    y = y, 
                                    group = ds), 
                                color = 'gray',
-                               alpha = 0.75,
+                               alpha = 0.8,
                                size = line.size * 0.9,
-                               linetype = "dashed")
-                #annotate("text", 
-                #         x = max(exp.df$date), 
-                #         y = max(exp.df$y[exp.df$ds == '1 day']), 
-                #         label = "doubling every day",
-                #         angle = 57,
-                #         size = 8,
-                #         hjust = 1,
-                #         vjust = -0.7,
-                #         color = 'gray',
-                #         alpha = 1) +
-                #annotate("text", 
-                #         x = max(exp.df$date), 
-                #         y = max(exp.df$y[exp.df$ds == '2 days']), 
-                #         label = "doubling every day",
-                #         angle = 45,
-                #         size = 8,
-                #         hjust = 1,
-                #         vjust = -0.7,
-                #         color = 'gray',
-                #         alpha = 1)
+                               linetype = "dashed") +
+                annotate("text",
+                        x = max(exp.df$date) * 0.99,
+                        y = max(exp.df$y[exp.df$ds == '1 day']),
+                        label = "doubling every day",
+                        size = 6,
+                        hjust = 1,
+                        vjust = 0,
+                        color = 'gray',
+                        alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '2 days']),
+                         label = "doubling every 2 days",
+                         size = 5.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '3 days']),
+                         label = "doubling every 3 days",
+                         size = 5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '5 days']),
+                         label = "doubling every 5 days",
+                         size = 4.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '7 days']),
+                         label = "doubling every 7 days",
+                         size = 4,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1)
         }
         
         p <- p +
@@ -518,13 +531,13 @@ server <- function(input, output, session) {
     
     observe({
         inputData()
-        if(as.logical(input$facet) | input$transformation == 'none') {
+        if(as.logical(input$facet) | input$transformation == 'none' | !as.logical(input$align)) {
             updateRadioButtons(session, "exponentials",
                                selected = list('No' = F))
         }
     })
     
-    observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE'))
+    observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE' & input$align == 'TRUE'))
     
     output$casesPlot <- renderPlot(renderCases(inputData()))
     output$mapPlot <- renderPlot(renderMap(inputData()))
