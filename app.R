@@ -147,7 +147,7 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Charts will build automatically 2 seconds any changing any parameters.
+    "Charts will build automatically 2 seconds after changing any parameter.
     To construct the plot and map immediately, click the 'Build Charts' button. 
     The 'Align' option will align each state with Day 0 as the 
     first day that each had at least 'Align Number' number of 
