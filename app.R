@@ -69,7 +69,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(width = 4,
-                     div(style = 'margin-top: -10px; margin-bottom: 0px',
+                     div(style = 'margin-top: -15px; margin-bottom: -15px',
                          fluidRow(
                              column(6,
                                     pickerInput("stateChoice", 
@@ -126,11 +126,6 @@ ui <- fluidPage(
                                                  selected = list('No' = F)
                                     )
                              )
-                         ),
-                         fluidRow(
-                             column(12, align = 'center',
-                                    actionButton("do", "Build Charts")
-                             )
                          )
                      )
         ),
@@ -147,41 +142,18 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Charts will build automatically 2 seconds after changing any parameter.
-    To construct the plot and map immediately, click the 'Build Charts' button. 
+    "Charts will build automatically 1.5 seconds after changing any parameter.
     The 'Align' option will align each state with Day 0 as the 
     first day that each had at least 'Align Number' number of 
     the variable you selected. The 'Facet' option will split each 
     state into its own subplot; be careful with it because it could
     take some time to render. The map shows the most recent day's data.
-    The transformation you choose will be applied to both the plot and the map.
+    The y-axis transformation chosen will be applied to both the plot and the map.
     Data from: http://covidtracking.com/"
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    
-    inputData <- reactive({
-        these.data = list(state = input$stateChoice,
-                          series = input$seriesChoice,
-                          transformation = input$transformation,
-                          highlights = input$highlightSet,
-                          align = input$align,
-                          num_align = input$num_align,
-                          facet = input$facet)
-    })
-    
-    input_d <- inputData %>% debounce(2000)
-    
-    # input_d <- eventReactive(input$do, {
-    #     these.data = list(state = input$stateChoice,
-    #                       series = input$seriesChoice,
-    #                       transformation = input$transformation,
-    #                       highlights = input$highlightSet,
-    #                       align = input$align,
-    #                       num_align = input$num_align,
-    #                       facet = input$facet)
-    # })
     
     renderCases <- function(these.data) {
         
@@ -476,7 +448,7 @@ server <- function(input, output) {
         print(p)
     }
     
-    observeEvent(input$do, {
+    inputData <- reactive({
         these.data = list(state = input$stateChoice,
                           series = input$seriesChoice,
                           transformation = input$transformation,
@@ -484,13 +456,12 @@ server <- function(input, output) {
                           align = input$align,
                           num_align = input$num_align,
                           facet = input$facet)
-        
-        output$casesPlot <- renderPlot(renderCases(these.data = input_d()))
-        output$mapPlot <- renderPlot(renderMap(these.data = input_d()))
-    })
+    }) %>% debounce(1000)
     
-    output$casesPlot <- renderPlot(renderCases(these.data = input_d()))
-    output$mapPlot <- renderPlot(renderMap(these.data = input_d()))
+    observeEvent(inputData(), {
+        output$casesPlot <- renderPlot(renderCases(inputData()))
+        output$mapPlot <- renderPlot(renderMap(inputData()))
+    })
 }
 
 # Run the application 
