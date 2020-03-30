@@ -168,7 +168,7 @@ ui <- fluidPage(
     display as 7 dashed lines; the steepest line is doubling every 1 day and the 
     flattest is doubling every 7 days. They are calculated with Day 0 being the mean of
     Day 0 for all currently selected data. If Day 0 had zero cases, 1 case is substituted to calculate the 
-    doubling guide. As a result, aligning will significantly improve interpretability of the doubling guides.",
+    doubling guide. Note, aligning correctly will significantly improve interpretability of the doubling guides.",
     br(),
     "Data from: ",
     a("http://covidtracking.com/", href="http://covidtracking.com/"),
