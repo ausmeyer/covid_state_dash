@@ -194,7 +194,7 @@ server <- function(input, output, session) {
             local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
             
-            start <- mean(local.df[[s]][local.df$date == min(local.df$date)])
+            start <- median(local.df[[s]][local.df$date == min(local.df$date)])
             if(start == 0)
                 start <- 1
             
