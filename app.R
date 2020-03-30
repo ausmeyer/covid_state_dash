@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(shinyjs)
 library(shinyWidgets)
 library(tidyverse)
 library(lubridate)
@@ -18,6 +19,7 @@ library(scales)
 library(shinycssloaders)
 library(sf)
 library(albersusa)
+library(directlabels)
 
 options(spinner.color="#3e5fff")
 
@@ -60,8 +62,13 @@ colors <- viridis_pal()(length(unique(state.df$state)))
 colors.list <- list()
 sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- colors[x])
 
+doubling_time <- function(N0, d0, ts) {
+    N0 * 2 ^ (ts / d0)
+}
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    useShinyjs(),
     
     # Application title
     titlePanel("COVID-19 US State Tracker Dashboard"),
@@ -125,6 +132,13 @@ ui <- fluidPage(
                                                  choices = list('Yes' = T, 'No' = F),
                                                  selected = list('No' = F)
                                     )
+                             ),
+                             column(6,
+                                    radioButtons("exponentials", 
+                                                 h4("Doubling"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
                              )
                          )
                      )
@@ -148,7 +162,14 @@ ui <- fluidPage(
     the variable you selected. The 'Facet' option will split each 
     state into its own subplot; be careful with it because it could
     take some time to render. The map shows the most recent day's data.
-    The y-axis transformation chosen will be applied to both the plot and the map.
+    The y-axis transformation chosen will be applied to both the plot and the map. 
+    The doubling time guides (called 'Doubling') can only be selected when 'Facet' is unselected and 
+    the Log10 y-axis is selected. The doubling time guides display as 7 dashed lines;
+    the steepest line is doubling every 1 day and the flattest is doubling every 7 days. 
+    I will eventually add annotations to them, but floating the angle correctly on the 
+    fly is non-trivial. They are calculated with Day 0 being the mean Day 0 for 
+    all currently selected data. As a result, aligning will significantly improve 
+    interpretability of the doubling guides.
     Data from: http://covidtracking.com/"
 )
 
@@ -161,12 +182,41 @@ server <- function(input, output) {
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
+        date_seq <- 0:(max(local.df$date)-min(local.df$date))
+        ys <- lapply(1:7, function(x) doubling_time(mean(local.df[[s]][local.df$date == min(local.df$date)]), x, date_seq))
+        
+        exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 7),
+                         y = unlist(ys),
+                         ds = c(rep('1 day', length(date_seq)),
+                                rep('2 days', length(date_seq)),
+                                rep('3 days', length(date_seq)),
+                                rep('4 days', length(date_seq)),
+                                rep('5 days', length(date_seq)),
+                                rep('6 days', length(date_seq)),
+                                rep('7 days', length(date_seq))))
+        
+        
         if(as.logical(these.data$align)) {
             start_dates <- local.df %>% 
                 group_by(state) %>% 
                 summarise(start_date = min(date[.data[[s]] >= as.numeric(these.data$num_align)], na.rm = TRUE))
             local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
+            
+            date_seq <- 0:(max(local.df$date)-min(local.df$date))
+            ys <- lapply(1:7, function(x) doubling_time(mean(local.df[[s]][local.df$date == min(local.df$date)]), x, date_seq))
+            
+            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 7),
+                             y = unlist(ys),
+                             ds = c(rep('1 day', length(date_seq)),
+                                    rep('2 days', length(date_seq)),
+                                    rep('3 days', length(date_seq)),
+                                    rep('4 days', length(date_seq)),
+                                    rep('5 days', length(date_seq)),
+                                    rep('6 days', length(date_seq)),
+                                    rep('7 days', length(date_seq))))
+            
+            exp.df$date <- exp.df$date - min(local.df$date)
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
         
@@ -178,14 +228,11 @@ server <- function(input, output) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
         
+        p <- ggplot() +
+            ylim(min(local.df[[s]], na.rm = T), max(local.df[[s]], na.rm = T))
+        
         point.size <- 3.5
         line.size <- 1.25
-        
-        local.df[!(local.df$state %in% highlights), ] %>%
-            ggplot(aes(x = date, 
-                       y = .data[[s]], 
-                       color = state,
-                       fill = state)) -> p
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -229,9 +276,50 @@ server <- function(input, output) {
                 ) 
         }
         
-        p <- p + geom_line(size = line.size, 
-                           alpha = 0.25) +
-            geom_point(size = point.size, 
+        if(as.logical(inputData()$exp)) {
+            p <- p + geom_line(data = exp.df,
+                               aes(x = date, 
+                                   y = y, 
+                                   group = ds), 
+                               color = 'gray',
+                               alpha = 0.75,
+                               size = line.size * 0.9,
+                               linetype = "dashed")
+                #annotate("text", 
+                #         x = max(exp.df$date), 
+                #         y = max(exp.df$y[exp.df$ds == '1 day']), 
+                #         label = "doubling every day",
+                #         angle = 57,
+                #         size = 8,
+                #         hjust = 1,
+                #         vjust = -0.7,
+                #         color = 'gray',
+                #         alpha = 1) +
+                #annotate("text", 
+                #         x = max(exp.df$date), 
+                #         y = max(exp.df$y[exp.df$ds == '2 days']), 
+                #         label = "doubling every day",
+                #         angle = 45,
+                #         size = 8,
+                #         hjust = 1,
+                #         vjust = -0.7,
+                #         color = 'gray',
+                #         alpha = 1)
+        }
+        
+        p <- p +
+            geom_line(data = local.df[!(local.df$state %in% highlights), ],
+                      aes(x = date, 
+                          y = .data[[s]], 
+                          color = state),
+                      size = line.size, 
+                      alpha = 0.25) +
+            geom_point(data = local.df[!(local.df$state %in% highlights), ],
+                       aes(x = date, 
+                           y = .data[[s]], 
+                           color = state,
+                           fill = state),
+                       size = point.size, 
                        alpha = 0.5) +
             xlab('') +
             scale_color_manual(
@@ -262,7 +350,8 @@ server <- function(input, output) {
             geom_point(data = local.df[local.df$state %in% highlights, ],
                        aes(x = date,
                            y = .data[[s]],
-                           color = state, fill = state),
+                           color = state, 
+                           fill = state),
                        size = point.size,
                        alpha = 0.75)
         
@@ -413,38 +502,6 @@ server <- function(input, output) {
                 )
             )
         
-        if(these.data$transformation == 'log')
-            p <- p +
-            scale_fill_continuous_sequential(
-                trans = 'log',
-                palette = "Blues", 
-                rev = TRUE,
-                na.value = "grey60",
-                guide = guide_colorbar(
-                    direction = "horizontal",
-                    label.position = "bottom",
-                    title.position = "top",
-                    barwidth = grid::unit(4.0, "in"),
-                    barheight = grid::unit(0.2, "in")
-                )
-            )
-        
-        if(these.data$transformation == 'sqrt')
-            p <- p +
-            scale_fill_continuous_sequential(
-                trans = 'sqrt',
-                palette = "Blues", 
-                rev = TRUE,
-                na.value = "grey60",
-                guide = guide_colorbar(
-                    direction = "horizontal",
-                    label.position = "bottom",
-                    title.position = "top",
-                    barwidth = grid::unit(4.0, "in"),
-                    barheight = grid::unit(0.2, "in")
-                )
-            )
-        
         print(p)
     }
     
@@ -455,8 +512,13 @@ server <- function(input, output) {
                           highlights = input$highlightSet,
                           align = input$align,
                           num_align = input$num_align,
-                          facet = input$facet)
+                          facet = input$facet,
+                          exp = input$exponentials)
     }) %>% debounce(1500)
+    
+    observe({
+        shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE')
+    })
     
     output$casesPlot <- renderPlot(renderCases(inputData()))
     output$mapPlot <- renderPlot(renderMap(inputData()))
