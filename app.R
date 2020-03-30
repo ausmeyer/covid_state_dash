@@ -147,7 +147,8 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "To construct the plot and map click the 'Build Charts' button. 
+    "Charts will build automatically 2 seconds any changing any parameters.
+    To construct the plot and map immediately, click the 'Build Charts' button. 
     The 'Align' option will align each state with Day 0 as the 
     first day that each had at least 'Align Number' number of 
     the variable you selected. The 'Facet' option will split each 
