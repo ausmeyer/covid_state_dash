@@ -47,10 +47,8 @@ all.series <- list('Confirmed Positive' = 'positive',
                    'Daily Increase in Tests' = 'totalTestResultsIncrease',
                    'Pending Tests' = 'pending')
 
-all.transformations <- list('None' = 'none', 
-                            'Log10' = 'log10', 
-                            'Natural log' = 'log', 
-                            'Square root' = 'sqrt')
+all.transformations <- list('Linear' = 'none', 
+                            'Log10' = 'log10')
 
 state.df <- read_csv('http://covidtracking.com/api/states/daily.csv')
 state.df$dateChecked <- date(state.df$dateChecked)
@@ -100,7 +98,7 @@ ui <- fluidPage(
                                                 selected = all.series[1])),
                              column(6,
                                     pickerInput("transformation", 
-                                                h4("Transform"), 
+                                                h4("y-axis"), 
                                                 options = list(`actions-box` = TRUE),
                                                 choices = all.transformations,
                                                 selected = all.transformations[1])
@@ -172,6 +170,18 @@ server <- function(input, output) {
                           facet = input$facet)
     })
     
+    inputData <- reactive({
+        these.data = list(state = input$stateChoice,
+                          series = input$seriesChoice,
+                          transformation = input$transformation,
+                          highlights = input$highlightSet,
+                          align = input$align,
+                          num_align = input$num_align,
+                          facet = input$facet)
+    })
+    
+    input_d <- inputData %>% debounce(2000)
+    
     renderCases <- function(these.data) {
         
         s <- these.data$series
@@ -196,7 +206,7 @@ server <- function(input, output) {
         }
         
         point.size <- 3.5
-        line.size <- 1.1
+        line.size <- 1.25
         
         local.df[!(local.df$state %in% highlights), ] %>%
             ggplot(aes(x = date, 
@@ -208,28 +218,39 @@ server <- function(input, output) {
             p <- p + scale_y_continuous(trans = these.data$transformation)
         
         if(as.logical(these.data$facet)) {
+            point.size <- rescale(length(unique(local.df$state)), 
+                                  to = c(1.5, point.size), 
+                                  from = c(length(unique(state.df$state)), 1))
+            line.size <- rescale(length(unique(local.df$state)), 
+                                 to = c(1, line.size), 
+                                 from = c(length(unique(state.df$state)), 1))
+            font.size <- rescale(length(unique(local.df$state)), 
+                                 to = c(10, 16), 
+                                 from = c(length(unique(state.df$state)), 1))
+            
             p <- p + facet_rep_wrap(~state, scales = "fixed", repeat.tick.labels = FALSE) +
-                theme_minimal_hgrid(8, rel_small = 1) +
-                theme(legend.position = "right",
+                theme_minimal_hgrid(font.size, rel_small = 1, color = 'white') +
+                theme(panel.background = element_rect(fill = 'grey95'),
+                      axis.line.x = element_line(color = 'black'),
+                      axis.ticks.x = element_line(color = "black"),
+                      legend.position = "right",
                       legend.justification = "left",
-                      legend.text = element_text(size = 9),
+                      legend.text = element_text(size = 10),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank(),
                       panel.spacing.x = unit(0.75, "lines"),
-                      axis.text.x = element_text(angle = 90, hjust = 1),
-                      axis.title = element_text(size = 12),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5),
+                      axis.title = element_text(size = 16),
                       axis.title.x = element_text(margin = unit(c(3, 0, 0, 0), "mm")),
                       axis.title.y = element_text(margin = unit(c(0, 3, 0, 0), "mm"))
                 ) 
-            point.size <- 1.5
-            line.size <- 1.0
         }
         
         if(!as.logical(these.data$facet)) {
-            p <- p + theme_minimal_hgrid(12, rel_small = 1) +
+            p <- p + theme_minimal_hgrid(16, rel_small = 1) +
                 theme(legend.position = "right",
                       legend.justification = "left",
-                      legend.text = element_text(size = 9),
+                      legend.text = element_text(size = 10),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank()
                 ) 
@@ -454,8 +475,9 @@ server <- function(input, output) {
         print(p)
     }
     
-    output$casesPlot <- renderPlot(renderCases(these.data = inputData()))
-    output$mapPlot <- renderPlot(renderMap(these.data = inputData()))
+    
+    output$casesPlot <- renderPlot(renderCases(these.data = input_d()))
+    output$mapPlot <- renderPlot(renderMap(these.data = input_d()))
 }
 
 # Run the application 
