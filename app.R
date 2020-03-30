@@ -169,8 +169,14 @@ ui <- fluidPage(
     flattest is doubling every 7 days. I will eventually add annotations to them, 
     but floating the angle correctly on the fly is non-trivial. 
     They are calculated with Day 0 being the mean Day 0 for all currently selected data. 
-    As a result, aligning will significantly improve interpretability of the doubling guides.
-    Data from: http://covidtracking.com/"
+    As a result, aligning will significantly improve interpretability of the doubling guides.",
+    br(),
+    "Data from: ",
+    a("http://covidtracking.com/", href="http://covidtracking.com/"),
+    br(),
+    "My very ugly code available at: ",
+    a("https://github.com/ausmeyer/covid_state_dash", href="https://github.com/ausmeyer/covid_state_dash"),
+    br(),br()
 )
 
 # Define server logic required to draw a histogram
