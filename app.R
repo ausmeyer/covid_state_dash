@@ -56,7 +56,7 @@ state.df$date <- ymd(state.df$date)
 
 us_sf <- usa_sf("laea")
 
-colors <- hue_pal()(length(unique(state.df$state)))
+colors <- viridis_pal()(length(unique(state.df$state)))
 colors.list <- list()
 sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- colors[x])
 
@@ -160,16 +160,6 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     
-    inputData <- eventReactive(input$do, {
-        these.data = list(state = input$stateChoice,
-                          series = input$seriesChoice,
-                          transformation = input$transformation,
-                          highlights = input$highlightSet,
-                          align = input$align,
-                          num_align = input$num_align,
-                          facet = input$facet)
-    })
-    
     inputData <- reactive({
         these.data = list(state = input$stateChoice,
                           series = input$seriesChoice,
@@ -181,6 +171,16 @@ server <- function(input, output) {
     })
     
     input_d <- inputData %>% debounce(2000)
+    
+    # input_d <- eventReactive(input$do, {
+    #     these.data = list(state = input$stateChoice,
+    #                       series = input$seriesChoice,
+    #                       transformation = input$transformation,
+    #                       highlights = input$highlightSet,
+    #                       align = input$align,
+    #                       num_align = input$num_align,
+    #                       facet = input$facet)
+    # })
     
     renderCases <- function(these.data) {
         
@@ -475,6 +475,18 @@ server <- function(input, output) {
         print(p)
     }
     
+    observeEvent(input$do, {
+        these.data = list(state = input$stateChoice,
+                          series = input$seriesChoice,
+                          transformation = input$transformation,
+                          highlights = input$highlightSet,
+                          align = input$align,
+                          num_align = input$num_align,
+                          facet = input$facet)
+        
+        output$casesPlot <- renderPlot(renderCases(these.data = input_d()))
+        output$mapPlot <- renderPlot(renderMap(these.data = input_d()))
+    })
     
     output$casesPlot <- renderPlot(renderCases(these.data = input_d()))
     output$mapPlot <- renderPlot(renderMap(these.data = input_d()))
