@@ -192,6 +192,7 @@ server <- function(input, output, session) {
     renderCasesPNG <- function(these.data) {
         
         s <- these.data$series
+        highlights <- these.data$highlights
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
@@ -204,33 +205,43 @@ server <- function(input, output, session) {
             if(nrow(start_dates) > 1)
                 local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             
-            local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
+            doubling.df <- local.df
             
-            start <- median(local.df[[s]][local.df$date == min(local.df$date)])
+            if(length(highlights) > 0)
+                doubling.df <- local.df[local.df$state %in% highlights, ]
             
-            if(start == 0)
-                start <- 1
+            if(nrow(start_dates) > 1)
+                minimums <- doubling.df[order(doubling.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) doubling.df$date[doubling.df$state == start_dates$state[x]] == start_dates$start_date[x])), ]
             
-            print(start)
+            low <- min(minimums[[s]])
+            high <- max(minimums[[s]])
             
-            date_seq <- 0:(max(local.df$date) - min(local.df$date))
+            if(low == 0)
+                low <- 1
+            if(high == 0)
+                high <- 1
+            
+            start <- 10^mean(c(log10(low), log10(high)))
+            
+            date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
             ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
             
-            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 4),
+            exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
                              y = unlist(ys),
                              ds = c(rep('2 days', length(date_seq)),
                                     rep('3 days', length(date_seq)),
                                     rep('5 days', length(date_seq)),
                                     rep('7 days', length(date_seq))))
             
-            exp.df$date <- exp.df$date - min(local.df$date)
+            exp.df$date <- exp.df$date - min(doubling.df$date)
+            
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
         
         local.colors <- unlist(colors.list[unique(local.df$state)])
-        if(length(local.colors) == 0){local.colors <- colors[1]}
+        if(length(local.colors) == 0)
+            local.colors <- colors[1]
         
-        highlights <- these.data$highlights
         if(length(highlights) > 0) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
@@ -428,6 +439,7 @@ server <- function(input, output, session) {
     renderCasesSVG <- function(these.data) {
         
         s <- these.data$series
+        highlights <- these.data$highlights
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
@@ -437,32 +449,45 @@ server <- function(input, output, session) {
                 summarise(start_date = min(date[.data[[s]] >= as.numeric(these.data$num_align)], na.rm = TRUE))
             
             if(nrow(start_dates) > 1)
-                local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+                local.df <- local.df[order(local.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             
-            local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
+            doubling.df <- local.df
             
-            start <- median(local.df[[s]][local.df$date == min(local.df$date)])
-            if(start == 0)
-                start <- 1
+            if(length(highlights) > 0)
+                doubling.df <- local.df[local.df$state %in% highlights, ]
+                
+            if(nrow(start_dates) > 1)
+                minimums <- doubling.df[order(doubling.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) doubling.df$date[doubling.df$state == start_dates$state[x]] == start_dates$start_date[x])), ]
             
-            date_seq <- 0:(max(local.df$date) - min(local.df$date))
+            low <- min(minimums[[s]])
+            high <- max(minimums[[s]])
+            
+            if(low == 0)
+                low <- 1
+            if(high == 0)
+                high <- 1
+            
+            start <- 10^mean(c(log10(low), log10(high)))
+            
+            date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
             ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
             
-            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 4),
+            exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
                              y = unlist(ys),
                              ds = c(rep('2 days', length(date_seq)),
                                     rep('3 days', length(date_seq)),
                                     rep('5 days', length(date_seq)),
                                     rep('7 days', length(date_seq))))
             
-            exp.df$date <- exp.df$date - min(local.df$date)
+            exp.df$date <- exp.df$date - min(doubling.df$date)
+            
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
         
         local.colors <- unlist(colors.list[unique(local.df$state)])
-        if(length(local.colors) == 0){local.colors <- colors[1]}
+        if(length(local.colors) == 0)
+            local.colors <- colors[1]
         
-        highlights <- these.data$highlights
         if(length(highlights) > 0) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
