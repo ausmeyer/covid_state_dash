@@ -10,6 +10,7 @@
 library(shiny)
 library(shinyjs)
 library(shinyWidgets)
+library(ggiraph)
 library(tidyverse)
 library(lubridate)
 library(cowplot)
@@ -140,12 +141,31 @@ ui <- fluidPage(
                                                  selected = list('No' = F)
                                     )
                              )
+                             
+                         ),
+                         fluidRow(
+                             column(12,
+                                    align="center",
+                                    radioGroupButtons("output",
+                                                      h4("Output Type"), 
+                                                      choices = list('PNG' = 'png', 'SVG' = 'svg'),
+                                                      selected = list('SVG' = 'svg')
+                                    )
+                             )
                          )
                      )
         ),
         # Show a plot of the generated distribution
         mainPanel(width = 8,
-                  plotOutput("casesPlot", height = 650) %>% withSpinner()
+                  conditionalPanel(
+                      condition = "input.output == 'png'",
+                      NULL
+                      #plotOutput("casesPlot", height = 500) %>% withSpinner()
+                  ),
+                  conditionalPanel(
+                      condition = "input.output == 'svg'",
+                      girafeOutput("casesPlot") %>% withSpinner()
+                  )
         )
     ),
     hr(),
@@ -200,7 +220,7 @@ server <- function(input, output, session) {
             
             date_seq <- 0:(max(local.df$date) - min(local.df$date))
             ys <- lapply(c(1, 2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
-        
+            
             exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 5),
                              y = unlist(ys),
                              ds = c(rep('1 day', length(date_seq)),
@@ -224,8 +244,18 @@ server <- function(input, output, session) {
         p <- ggplot() +
             ylim(min(local.df[[s]], na.rm = T), max(local.df[[s]], na.rm = T))
         
+        # define base sizes
+        base.size <- 14
         point.size <- 3.5
         line.size <- 1.25
+        font.size <- 16
+        
+        if(these.data$output == 'svg') {
+            base.size <- 20
+            point.size <- 5
+            line.size <- 1.5
+            font.size <- 26
+        }
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -237,39 +267,42 @@ server <- function(input, output, session) {
             line.size <- rescale(length(unique(local.df$state)), 
                                  to = c(1, line.size), 
                                  from = c(length(unique(state.df$state)), 1))
-            font.size <- rescale(length(unique(local.df$state)), 
-                                 to = c(10, 16), 
-                                 from = c(length(unique(state.df$state)), 1))
+            font.size.adjust <- rescale(length(unique(local.df$state)), 
+                                        to = c(10, font.size), 
+                                        from = c(length(unique(state.df$state)), 1))
             
             p <- p + facet_rep_wrap(~state, scales = "fixed", repeat.tick.labels = FALSE) +
-                theme_minimal_hgrid(font.size, rel_small = 1, color = 'white') +
+                theme_minimal_hgrid(font.size.adjust, rel_small = 1, color = 'white') +
                 theme(panel.background = element_rect(fill = 'grey95'),
                       axis.line.x = element_line(color = 'black'),
                       axis.ticks.x = element_line(color = "black"),
                       legend.position = "right",
                       legend.justification = "left",
-                      legend.text = element_text(size = 10),
+                      legend.text = element_text(size = base.size),
                       legend.box.spacing = unit(0, "pt"),
                       legend.title = element_blank(),
                       panel.spacing.x = unit(0.75, "lines"),
                       axis.text.x = element_text(angle = 90, vjust = 0.5),
-                      axis.title = element_text(size = 16),
+                      axis.title = element_text(size = font.size),
                       axis.title.x = element_text(margin = unit(c(3, 0, 0, 0), "mm")),
                       axis.title.y = element_text(margin = unit(c(0, 3, 0, 0), "mm"))
                 ) 
         }
         
         if(!as.logical(these.data$facet)) {
-            p <- p + theme_minimal_hgrid(16, rel_small = 1) +
+            p <- p + theme_minimal_hgrid(base.size, rel_small = 1) +
                 theme(legend.position = "right",
                       legend.justification = "left",
-                      legend.text = element_text(size = 10),
+                      legend.text = element_text(size = base.size),
                       legend.box.spacing = unit(0, "pt"),
-                      legend.title = element_blank()
+                      legend.title = element_blank(),
+                      axis.title = element_text(size = font.size),
+                      axis.title.x = element_text(margin = unit(c(3, 0, 0, 0), "mm")),
+                      axis.title.y = element_text(margin = unit(c(0, 3, 0, 0), "mm"))
                 ) 
         }
         
-        if(as.logical(inputData()$exp)) {
+        if(as.logical(these.data$exp)) {
             p <- p + geom_line(data = exp.df,
                                aes(x = date, 
                                    y = y, 
@@ -279,14 +312,14 @@ server <- function(input, output, session) {
                                size = line.size * 0.9,
                                linetype = "dashed") +
                 annotate("text",
-                        x = max(exp.df$date) * 0.99,
-                        y = max(exp.df$y[exp.df$ds == '1 day']),
-                        label = "doubling every day",
-                        size = 6,
-                        hjust = 1,
-                        vjust = 0,
-                        color = 'gray',
-                        alpha = 1) +
+                         x = max(exp.df$date) * 0.99,
+                         y = max(exp.df$y[exp.df$ds == '1 day']),
+                         label = "doubling every day",
+                         size = 6,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
                          y = max(exp.df$y[exp.df$ds == '2 days']),
@@ -331,15 +364,31 @@ server <- function(input, output, session) {
                           y = .data[[s]], 
                           color = state),
                       size = line.size, 
-                      alpha = 0.25) +
-            geom_point(data = local.df[!(local.df$state %in% highlights), ],
-                       aes(x = date, 
-                           y = .data[[s]], 
-                           color = state,
-                           fill = state),
-                       size = point.size, 
-                       alpha = 0.5) +
-            xlab('') +
+                      alpha = 0.25)
+        
+        if(these.data$output == 'svg') {
+            p <- p + geom_point_interactive(data = local.df[!(local.df$state %in% highlights), ],
+                                            aes(x = date, 
+                                                y = .data[[s]], 
+                                                color = state,
+                                                fill = state,
+                                                tooltip = sapply(.data[[s]], function(x) paste('y:', as.character(x))),
+                                                data_id = .data[[s]]),
+                                            size = point.size, 
+                                            alpha = 0.5)
+        }
+        
+        if(these.data$output == 'png') {
+            p <- p + geom_point(data = local.df[!(local.df$state %in% highlights), ],
+                                aes(x = date, 
+                                    y = .data[[s]], 
+                                    color = state,
+                                    fill = state),
+                                size = point.size, 
+                                alpha = 0.5)
+        }
+        
+        p <- p + xlab('') +
             scale_color_manual(
                 name = NULL,
                 values = local.colors
@@ -364,51 +413,29 @@ server <- function(input, output, session) {
                           y = .data[[s]],
                           color = state),
                       size = line.size,
-                      alpha = 0.5) +
-            geom_point(data = local.df[local.df$state %in% highlights, ],
-                       aes(x = date,
-                           y = .data[[s]],
-                           color = state, 
-                           fill = state),
-                       size = point.size,
-                       alpha = 0.75)
+                      alpha = 0.5)
         
-        ## Animation disabled for now
-        # if(as.logical(these.data$animate)) {        
-        #     local.df[!(local.df$state %in% highlights), ] %>%
-        #         ggplot(aes(x = date, 
-        #                    y = .data[[s]], 
-        #                    color = state,
-        #                    fill = state,
-        #                    group = state)) + 
-        #         geom_line(size = 1.1, 
-        #                   alpha = 0.25) +
-        #         geom_point(size = 3.5, 
-        #                    alpha = 0.5) +
-        #         transition_reveal(date) +
-        #         xlab('') +
-        #         scale_color_manual(
-        #             name = NULL,
-        #             values = local.colors
-        #         ) +
-        #         scale_fill_manual(
-        #             name = NULL,
-        #             values = local.colors
-        #         ) +
-        #         guides(
-        #             color = guide_legend(
-        #                 nrow = 28
-        #             )
-        #         ) +
-        #         theme_minimal_hgrid(12, rel_small = 1) +
-        #         theme(
-        #             legend.position = "right",
-        #             legend.justification = "left",
-        #             legend.text = element_text(size = 9),
-        #             legend.box.spacing = unit(0, "pt"),
-        #             legend.title = element_blank()
-        #         ) -> p
-        # }
+        if(these.data$output == 'svg') {
+            p <- p + geom_point_interactive(data = local.df[local.df$state %in% highlights, ],
+                                            aes(x = date, 
+                                                y = .data[[s]], 
+                                                color = state,
+                                                fill = state,
+                                                tooltip = sapply(.data[[s]], function(x) paste('y:', as.character(x))),
+                                                data_id = .data[[s]]),
+                                            size = point.size,
+                                            alpha = 0.75)
+        }
+        
+        if(these.data$output == 'png') {
+            p <- p + geom_point(data = local.df[local.df$state %in% highlights, ],
+                                aes(x = date, 
+                                    y = .data[[s]], 
+                                    color = state,
+                                    fill = state),
+                                size = point.size,
+                                alpha = 0.75)
+        }
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
@@ -436,12 +463,7 @@ server <- function(input, output, session) {
         if(s == 'totalTestResultsIncrease')
             p <- p + ylab('Daily increase in number of COVID-19 tests run')
         
-        ## Animation disabled for now
-        #if(as.logical(these.data$animate)) { 
-        #    p <- animate(p)
-        #}
-        
-        print(p)
+        return(p)
     }
     
     renderMap <- function(these.data) {
@@ -520,7 +542,7 @@ server <- function(input, output, session) {
                 )
             )
         
-        print(p)
+        return(p)
     }
     
     inputData <- reactive({
@@ -531,7 +553,8 @@ server <- function(input, output, session) {
                           align = input$align,
                           num_align = input$num_align,
                           facet = input$facet,
-                          exp = input$exponentials)
+                          exp = input$exponentials,
+                          output = input$output)
     }) %>% debounce(1500)
     
     observe({
@@ -544,8 +567,21 @@ server <- function(input, output, session) {
     
     observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE' & input$align == 'TRUE'))
     
-    output$casesPlot <- renderPlot(renderCases(inputData()))
-    output$mapPlot <- renderPlot(renderMap(inputData()))
+    observe({
+        
+        if(inputData()$output == 'png') {
+            output$casesPlot <- renderPlot(renderCases(inputData()))
+            output$mapPlot <- renderPlot(renderMap(inputData()))
+        }
+        
+        if(inputData()$output == 'svg') {
+            output$casesPlot <- renderGirafe(girafe(ggobj = renderCases(inputData()),
+                                                    width_svg = 20,
+                                                    height_svg = 20 * 5 / 7,
+                                                    options = list(opts_selection(type = "single", only_shiny = FALSE))))
+            output$mapPlot <- renderPlot(renderMap(inputData()))
+        }
+    })
 }
 
 # Run the application 
