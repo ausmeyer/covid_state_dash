@@ -212,12 +212,11 @@ server <- function(input, output, session) {
                 start <- 1
             
             date_seq <- 0:(max(local.df$date) - min(local.df$date))
-            ys <- lapply(c(1, 2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
+            ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
             
-            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 5),
+            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 4),
                              y = unlist(ys),
-                             ds = c(rep('1 day', length(date_seq)),
-                                    rep('2 days', length(date_seq)),
+                             ds = c(rep('2 days', length(date_seq)),
                                     rep('3 days', length(date_seq)),
                                     rep('5 days', length(date_seq)),
                                     rep('7 days', length(date_seq))))
@@ -446,12 +445,11 @@ server <- function(input, output, session) {
                 start <- 1
             
             date_seq <- 0:(max(local.df$date) - min(local.df$date))
-            ys <- lapply(c(1, 2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
+            ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
             
-            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 5),
+            exp.df <- tibble(date = rep(min(local.df$date) + days(date_seq), 4),
                              y = unlist(ys),
-                             ds = c(rep('1 day', length(date_seq)),
-                                    rep('2 days', length(date_seq)),
+                             ds = c(rep('2 days', length(date_seq)),
                                     rep('3 days', length(date_seq)),
                                     rep('5 days', length(date_seq)),
                                     rep('7 days', length(date_seq))))
