@@ -684,7 +684,7 @@ server <- function(input, output, session) {
                 legend.title.align = 0.5,
                 legend.text.align = 0.5,
                 legend.justification = c(0, 0),
-                legend.position = c(0.6, 0.0)
+                legend.position = c(0.4, 0.0)
             ) +
             labs(fill = this.legend.title)
         
@@ -745,10 +745,10 @@ server <- function(input, output, session) {
     observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE' & input$align == 'TRUE'))
     
     output$casesPlotPNG <- renderPlot(renderCasesPNG(inputData()))
-    #output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(inputData()),
-    #                                           width_svg = 20,
-    #                                           height_svg = 20 * 5 / 7,
-    #                                           options = list(opts_selection(type = "single", only_shiny = FALSE))))
+    output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(inputData()),
+                                               width_svg = 20,
+                                               height_svg = 20 * 5 / 7,
+                                               options = list(opts_selection(type = "single", only_shiny = FALSE))))
     output$mapPlot <- renderPlot(renderMap(inputData()))
 }
 
