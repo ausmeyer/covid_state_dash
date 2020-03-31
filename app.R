@@ -288,22 +288,22 @@ server <- function(input, output, session) {
                 ) 
         }
         
+        plottable.df <- local.df[!(local.df$state %in% highlights), ]
         p <- p +
-            geom_line(data = local.df[!(local.df$state %in% highlights), ],
+            geom_line(data = plottable.df,
                       aes(x = date, 
                           y = .data[[s]], 
                           color = state),
                       size = line.size, 
                       alpha = 0.25) + 
-            geom_point(data = local.df[!(local.df$state %in% highlights), ],
+            geom_point(data = plottable.df,
                        aes(x = date, 
                            y = .data[[s]], 
                            color = state,
                            fill = state),
                        size = point.size, 
-                       alpha = 0.5)
-        
-        p <- p + xlab('') +
+                       alpha = 0.5) +
+            xlab('') +
             scale_color_manual(
                 name = NULL,
                 values = local.colors
@@ -320,20 +320,25 @@ server <- function(input, output, session) {
                         shape = c(rep(21, length(unique(local.df$state))))
                     )
                 )
-            ) +
-            geom_line(data = local.df[local.df$state %in% highlights, ],
-                      aes(x = date,
-                          y = .data[[s]],
-                          color = state),
-                      size = line.size,
-                      alpha = 0.5) +
-            geom_point(data = local.df[local.df$state %in% highlights, ],
-                       aes(x = date, 
-                           y = .data[[s]], 
-                           color = state,
-                           fill = state),
-                       size = point.size,
-                       alpha = 0.75)
+            ) 
+        
+        if(length(highlights) > 0) {
+            highlights.df <- local.df[local.df$state %in% highlights, ]
+            p <- p + geom_line(data = highlights.df,
+                               aes(x = date,
+                                   y = .data[[s]],
+                                   color = state),
+                               size = line.size,
+                               alpha = 0.5) + 
+                geom_point(data = highlights.df,
+                                       aes(x = date, 
+                                           y = .data[[s]], 
+                                           color = state,
+                                           fill = state),
+                                       size = point.size,
+                                       alpha = 0.75)
+        }
+        
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
@@ -518,22 +523,56 @@ server <- function(input, output, session) {
                 ) 
         }
         
+        tooltip.label <- ''
+        if(s == 'positive')
+            tooltip.label <- 'cases:'
+        if(s == 'negative')
+            tooltip.label <- 'negative tests:'
+        if(s == 'pending')
+            tooltip.label <- 'pending tests:'
+        if(s == 'hospitalized')
+            tooltip.label <- 'hospitalized'
+        if(s == 'death')
+            tooltip.label <- 'deaths'
+        if(s == 'totalTestResults')
+            tooltip.label <- 'total tests:'
+        if(s == 'positiveIncrease')
+            tooltip.label <- 'positive increase:'
+        if(s == 'negativeIncrease')
+            tooltip.label <- 'negative increase:'
+        if(s == 'hospitalizedIncrease')
+            tooltip.label <- 'hospitalized increase:'
+        if(s == 'deathIncrease')
+            tooltip.label <- 'death increase:'
+        if(s == 'totalTestResultsIncrease')
+            tooltip.label <- 'total tests increase:'
+        
+        tooltip.func <- function(dat) {
+            this.list <- unlist(lapply(1:nrow(dat), function(i) paste('state:', dat$state[i], '\n', 
+                                                                      'day:', dat$date[i], '\n',
+                                                                      tooltip.label, as.character(dat[[s]][i]))
+                                       )
+                                )
+            return(this.list)
+        }
+        
+        plottable.df <- local.df[!(local.df$state %in% highlights), ]
         p <- p +
-            geom_line(data = local.df[!(local.df$state %in% highlights), ],
+            geom_line(data = plottable.df,
                       aes(x = date, 
                           y = .data[[s]], 
                           color = state),
                       size = line.size, 
                       alpha = 0.25) + 
-            geom_point_interactive(data = local.df[!(local.df$state %in% highlights), ],
+            geom_point_interactive(data = plottable.df,
                                    aes(x = date, 
                                        y = .data[[s]], 
                                        color = state,
                                        fill = state,
-                                       tooltip = sapply(.data[[s]], function(x) paste('y:', as.character(x))),
-                                       data_id = .data[[s]]),
+                                       tooltip = tooltip.func(plottable.df),
+                                       data_id = state),
                                    size = point.size, 
-                                   alpha = 0.5) + 
+                                   alpha = 0.5)+ 
             xlab('') +
             scale_color_manual(
                 name = NULL,
@@ -551,22 +590,26 @@ server <- function(input, output, session) {
                         shape = c(rep(21, length(unique(local.df$state))))
                     )
                 )
-            ) +
-            geom_line(data = local.df[local.df$state %in% highlights, ],
-                      aes(x = date,
-                          y = .data[[s]],
-                          color = state),
-                      size = line.size,
-                      alpha = 0.5) + 
-            geom_point_interactive(data = local.df[local.df$state %in% highlights, ],
-                                   aes(x = date, 
-                                       y = .data[[s]], 
-                                       color = state,
-                                       fill = state,
-                                       tooltip = sapply(.data[[s]], function(x) paste('y:', as.character(x))),
-                                       data_id = .data[[s]]),
-                                   size = point.size,
-                                   alpha = 0.75)
+            )
+        
+        if(length(highlights) > 0) {
+            highlights.df <- local.df[local.df$state %in% highlights, ]
+            p <- p + geom_line(data = highlights.df,
+                               aes(x = date,
+                                   y = .data[[s]],
+                                   color = state),
+                               size = line.size,
+                               alpha = 0.5) + 
+                geom_point_interactive(data = highlights.df,
+                                       aes(x = date, 
+                                           y = .data[[s]], 
+                                           color = state,
+                                           fill = state,
+                                           tooltip = tooltip.func(highlights.df),
+                                           data_id = state),
+                                       size = point.size,
+                                       alpha = 0.75)
+        }
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
