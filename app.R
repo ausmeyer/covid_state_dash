@@ -247,7 +247,7 @@ server <- function(input, output, session) {
                                aes(x = date, 
                                    y = y, 
                                    group = ds), 
-                               color = 'gray',
+                               color = 'black',
                                alpha = 0.8,
                                size = line.size * 0.9,
                                linetype = "dashed") +
@@ -258,7 +258,7 @@ server <- function(input, output, session) {
                          size = 6,
                          hjust = 1,
                          vjust = 0,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -267,7 +267,7 @@ server <- function(input, output, session) {
                          size = 5.5,
                          hjust = 1,
                          vjust = -0.25,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -276,7 +276,7 @@ server <- function(input, output, session) {
                          size = 5,
                          hjust = 1,
                          vjust = -0.25,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -285,7 +285,7 @@ server <- function(input, output, session) {
                          size = 4.5,
                          hjust = 1,
                          vjust = -0.25,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -294,7 +294,7 @@ server <- function(input, output, session) {
                          size = 4,
                          hjust = 1,
                          vjust = -0.25,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1)
         }
         
@@ -488,7 +488,7 @@ server <- function(input, output, session) {
                                aes(x = date, 
                                    y = y, 
                                    group = ds), 
-                               color = 'gray',
+                               color = 'black',
                                alpha = 0.8,
                                size = line.size * 0.9,
                                linetype = "dashed") +
@@ -500,7 +500,7 @@ server <- function(input, output, session) {
                          hjust = 1,
                          vjust = 0,
                          #angle = atan(yval1 / xval) * 180 / pi,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = xval,
@@ -509,7 +509,7 @@ server <- function(input, output, session) {
                          size = ano.size * 0.95,
                          hjust = 1,
                          vjust = 0,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -518,7 +518,7 @@ server <- function(input, output, session) {
                          size = ano.size * 0.9,
                          hjust = 1,
                          vjust = 0,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -527,7 +527,7 @@ server <- function(input, output, session) {
                          size = ano.size * 0.85,
                          hjust = 1,
                          vjust = 0,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
@@ -536,7 +536,7 @@ server <- function(input, output, session) {
                          size = ano.size * 0.8,
                          hjust = 1,
                          vjust = 0,
-                         color = 'gray',
+                         color = 'black',
                          alpha = 1)
         }
         
