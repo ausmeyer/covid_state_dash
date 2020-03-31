@@ -211,6 +211,8 @@ server <- function(input, output, session) {
             if(start == 0)
                 start <- 1
             
+            print(start)
+            
             date_seq <- 0:(max(local.df$date) - min(local.df$date))
             ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
             
@@ -241,62 +243,6 @@ server <- function(input, output, session) {
         point.size <- 3.5
         line.size <- 1.25
         font.size <- 16
-        
-        if(as.logical(these.data$exp)) {
-            p <- p + geom_line(data = exp.df,
-                               aes(x = date, 
-                                   y = y, 
-                                   group = ds), 
-                               color = 'black',
-                               alpha = 0.8,
-                               size = line.size * 0.9,
-                               linetype = "dashed") +
-                annotate("text",
-                         x = max(exp.df$date) * 0.99,
-                         y = max(exp.df$y[exp.df$ds == '1 day']),
-                         label = "doubling every day",
-                         size = 6,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '2 days']),
-                         label = "doubling every 2 days",
-                         size = 5.5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '3 days']),
-                         label = "doubling every 3 days",
-                         size = 5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '5 days']),
-                         label = "doubling every 5 days",
-                         size = 4.5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '7 days']),
-                         label = "doubling every 7 days",
-                         size = 4,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'black',
-                         alpha = 1)
-        }
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -350,14 +296,14 @@ server <- function(input, output, session) {
                           y = .data[[s]], 
                           color = state),
                       size = line.size, 
-                      alpha = 0.25) + 
+                      alpha = 0.3) + 
             geom_point(data = plottable.df,
                        aes(x = date, 
                            y = .data[[s]], 
                            color = state,
                            fill = state),
                        size = point.size, 
-                       alpha = 0.5) +
+                       alpha = 0.6) +
             xlab('') +
             scale_color_manual(
                 name = NULL,
@@ -377,6 +323,62 @@ server <- function(input, output, session) {
                 )
             ) 
         
+        if(as.logical(these.data$exp)) {
+            p <- p + geom_line(data = exp.df,
+                               aes(x = date, 
+                                   y = y, 
+                                   group = ds), 
+                               color = 'gray50',
+                               alpha = 0.8,
+                               size = line.size * 0.9,
+                               linetype = "dashed") +
+                annotate("text",
+                         x = max(exp.df$date) * 0.99,
+                         y = max(exp.df$y[exp.df$ds == '1 day']),
+                         label = "doubling every day",
+                         size = 6,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '2 days']),
+                         label = "doubling every 2 days",
+                         size = 5.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '3 days']),
+                         label = "doubling every 3 days",
+                         size = 5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '5 days']),
+                         label = "doubling every 5 days",
+                         size = 4.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '7 days']),
+                         label = "doubling every 7 days",
+                         size = 4,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray50',
+                         alpha = 1)
+        }
+        
         if(length(highlights) > 0) {
             highlights.df <- local.df[local.df$state %in% highlights, ]
             p <- p + geom_line(data = highlights.df,
@@ -384,14 +386,14 @@ server <- function(input, output, session) {
                                    y = .data[[s]],
                                    color = state),
                                size = line.size,
-                               alpha = 0.5) + 
+                               alpha = 0.8) + 
                 geom_point(data = highlights.df,
                                        aes(x = date, 
                                            y = .data[[s]], 
                                            color = state,
                                            fill = state),
                                        size = point.size,
-                                       alpha = 0.75)
+                                       alpha = 0.9)
         }
         
         if(as.logical(these.data$align))
@@ -474,71 +476,6 @@ server <- function(input, output, session) {
         line.size <- 2.2
         font.size <- 28
         ano.size <- 8
-        
-        if(as.logical(these.data$exp)) {
-            
-            xval <- as.numeric(max(exp.df$date))
-            
-            yval1 <- (log10(max(exp.df$y[exp.df$ds == '1 day'])) - log10(min(exp.df$y))) * 2.6
-            yval2 <- log10(max(exp.df$y[exp.df$ds == '2 days'])) - log10(min(exp.df$y))
-            
-            #print(atan(yval1 / xval) * 180 / pi)
-            
-            p <- p + geom_line(data = exp.df,
-                               aes(x = date, 
-                                   y = y, 
-                                   group = ds), 
-                               color = 'black',
-                               alpha = 0.8,
-                               size = line.size * 0.9,
-                               linetype = "dashed") +
-                annotate("text",
-                         x = xval,
-                         y = max(exp.df$y[exp.df$ds == '1 day']),
-                         label = "doubling every day",
-                         size = ano.size,
-                         hjust = 1,
-                         vjust = 0,
-                         #angle = atan(yval1 / xval) * 180 / pi,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = xval,
-                         y = max(exp.df$y[exp.df$ds == '2 days']),
-                         label = "doubling every 2 days",
-                         size = ano.size * 0.95,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '3 days']),
-                         label = "doubling every 3 days",
-                         size = ano.size * 0.9,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '5 days']),
-                         label = "doubling every 5 days",
-                         size = ano.size * 0.85,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'black',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '7 days']),
-                         label = "doubling every 7 days",
-                         size = ano.size * 0.8,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'black',
-                         alpha = 1)
-        }
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -625,7 +562,7 @@ server <- function(input, output, session) {
                           y = .data[[s]], 
                           color = state),
                       size = line.size, 
-                      alpha = 0.25) + 
+                      alpha = 0.3) + 
             geom_point_interactive(data = plottable.df,
                                    aes(x = date, 
                                        y = .data[[s]], 
@@ -634,7 +571,7 @@ server <- function(input, output, session) {
                                        tooltip = tooltip.func(plottable.df),
                                        data_id = state),
                                    size = point.size, 
-                                   alpha = 0.5)+ 
+                                   alpha = 0.6)+ 
             xlab('') +
             scale_color_manual(
                 name = NULL,
@@ -654,6 +591,71 @@ server <- function(input, output, session) {
                 )
             )
         
+        if(as.logical(these.data$exp)) {
+            
+            xval <- as.numeric(max(exp.df$date))
+            
+            yval1 <- (log10(max(exp.df$y[exp.df$ds == '1 day'])) - log10(min(exp.df$y))) * 2.6
+            yval2 <- log10(max(exp.df$y[exp.df$ds == '2 days'])) - log10(min(exp.df$y))
+            
+            #print(atan(yval1 / xval) * 180 / pi)
+            
+            p <- p + geom_line(data = exp.df,
+                               aes(x = date, 
+                                   y = y, 
+                                   group = ds), 
+                               color = 'gray50',
+                               alpha = 0.8,
+                               size = line.size * 0.9,
+                               linetype = "dashed") +
+                annotate("text",
+                         x = xval,
+                         y = max(exp.df$y[exp.df$ds == '1 day']),
+                         label = "doubling every day",
+                         size = ano.size,
+                         hjust = 1,
+                         vjust = 0,
+                         #angle = atan(yval1 / xval) * 180 / pi,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = xval,
+                         y = max(exp.df$y[exp.df$ds == '2 days']),
+                         label = "doubling every 2 days",
+                         size = ano.size * 0.95,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '3 days']),
+                         label = "doubling every 3 days",
+                         size = ano.size * 0.9,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '5 days']),
+                         label = "doubling every 5 days",
+                         size = ano.size * 0.85,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray50',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '7 days']),
+                         label = "doubling every 7 days",
+                         size = ano.size * 0.8,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray50',
+                         alpha = 1)
+        }
+        
         if(length(highlights) > 0) {
             highlights.df <- local.df[local.df$state %in% highlights, ]
             p <- p + geom_line(data = highlights.df,
@@ -661,7 +663,7 @@ server <- function(input, output, session) {
                                    y = .data[[s]],
                                    color = state),
                                size = line.size,
-                               alpha = 0.5) + 
+                               alpha = 0.7) + 
                 geom_point_interactive(data = highlights.df,
                                        aes(x = date, 
                                            y = .data[[s]], 
@@ -670,7 +672,7 @@ server <- function(input, output, session) {
                                            tooltip = tooltip.func(highlights.df),
                                            data_id = state),
                                        size = point.size,
-                                       alpha = 0.75)
+                                       alpha = 0.9)
         }
         
         if(as.logical(these.data$align))
