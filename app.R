@@ -148,9 +148,9 @@ ui <- fluidPage(
         # Show a plot of the generated distribution
         mainPanel(width = 8,
                   tabsetPanel(type = "tabs",
-                              tabPanel("Plot", plotOutput("casesPlotPNG", height = 500) %>% withSpinner()),
-                              tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner()),
-                              tabPanel("Interactive SVG", girafeOutput("casesPlotSVG") %>% withSpinner())
+                              tabPanel("Basic Plot", plotOutput("casesPlotPNG", height = 500) %>% withSpinner()),
+                              tabPanel("Interactive Plot", girafeOutput("casesPlotSVG") %>% withSpinner()),
+                              tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner())
                   )
         )
     ),
