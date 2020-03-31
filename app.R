@@ -171,7 +171,7 @@ ui <- fluidPage(
     flattest is doubling every 7 days. They are calculated with Day 0 being the mean of
     Day 0 for all currently selected data. If Day 0 had zero cases, 1 case is substituted to calculate the 
     doubling guide. Note, aligning correctly will significantly improve interpretability of the doubling guides.
-    The Interactive SVG will taking much longer to build, but will have increasing interactive features.",
+    The Interactive SVG might take longer to build, but will have increasing interactive features.",
     
     br(),br(),
     
@@ -589,12 +589,12 @@ server <- function(input, output, session) {
                                size = line.size * 0.9,
                                linetype = "dashed") +
                 annotate("text",
-                         x = xval * 0.99,
+                         x = xval,
                          y = max(exp.df$y[exp.df$ds == '1 day']),
                          label = "doubling every day",
                          size = ano.size,
                          hjust = 1,
-                         vjust = -0.2,
+                         vjust = 0,
                          #angle = atan(yval1 / xval) * 180 / pi,
                          color = 'gray',
                          alpha = 1) +
@@ -604,7 +604,7 @@ server <- function(input, output, session) {
                          label = "doubling every 2 days",
                          size = ano.size * 0.95,
                          hjust = 1,
-                         vjust = -0.6,
+                         vjust = 0,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
@@ -613,8 +613,7 @@ server <- function(input, output, session) {
                          label = "doubling every 3 days",
                          size = ano.size * 0.9,
                          hjust = 1,
-                         vjust = -0.65,
-                         angle = 15,
+                         vjust = 0,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
@@ -623,7 +622,7 @@ server <- function(input, output, session) {
                          label = "doubling every 5 days",
                          size = ano.size * 0.85,
                          hjust = 1,
-                         vjust = -0.25,
+                         vjust = 0,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
@@ -632,7 +631,7 @@ server <- function(input, output, session) {
                          label = "doubling every 7 days",
                          size = ano.size * 0.8,
                          hjust = 1,
-                         vjust = -0.25,
+                         vjust = 0,
                          color = 'gray',
                          alpha = 1)
         }
