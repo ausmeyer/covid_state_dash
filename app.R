@@ -149,8 +149,8 @@ ui <- fluidPage(
         mainPanel(width = 8,
                   tabsetPanel(type = "tabs",
                               tabPanel("Plot", plotOutput("casesPlotPNG", height = 500) %>% withSpinner()),
-                              #tabPanel("SVG", girafeOutput("casesPlot") %>% withSpinner()),
-                              tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner())
+                              tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner()),
+                              tabPanel("Interactive SVG", girafeOutput("casesPlotSVG") %>% withSpinner())
                   )
         )
     ),
@@ -170,7 +170,8 @@ ui <- fluidPage(
     display as 7 dashed lines; the steepest line is doubling every 1 day and the 
     flattest is doubling every 7 days. They are calculated with Day 0 being the mean of
     Day 0 for all currently selected data. If Day 0 had zero cases, 1 case is substituted to calculate the 
-    doubling guide. Note, aligning correctly will significantly improve interpretability of the doubling guides.",
+    doubling guide. Note, aligning correctly will significantly improve interpretability of the doubling guides.
+    The Interactive SVG will taking much longer to build, but will have increasing interactive features.",
     
     br(),br(),
     
@@ -195,13 +196,18 @@ server <- function(input, output, session) {
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
         if(as.logical(these.data$align)) {
+            
             start_dates <- local.df %>% 
                 group_by(state) %>% 
                 summarise(start_date = min(date[.data[[s]] >= as.numeric(these.data$num_align)], na.rm = TRUE))
-            local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+            
+            if(nrow(start_dates) > 1)
+                local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+            
             local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
             
             start <- median(local.df[[s]][local.df$date == min(local.df$date)])
+            
             if(start == 0)
                 start <- 1
             
@@ -424,7 +430,10 @@ server <- function(input, output, session) {
             start_dates <- local.df %>% 
                 group_by(state) %>% 
                 summarise(start_date = min(date[.data[[s]] >= as.numeric(these.data$num_align)], na.rm = TRUE))
-            local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+            
+            if(nrow(start_dates) > 1)
+                local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+            
             local.df <- local.df[local.df$state %in% start_dates$state[!is.na(day(start_dates$start_date))], ]
             
             start <- median(local.df[[s]][local.df$date == min(local.df$date)])
@@ -458,10 +467,11 @@ server <- function(input, output, session) {
             ylim(min(local.df[[s]], na.rm = T), max(local.df[[s]], na.rm = T))
         
         # define base sizes
-        base.size <- 20
-        point.size <- 5
-        line.size <- 1.5
-        font.size <- 26
+        base.size <- 22
+        point.size <- 6.5
+        line.size <- 2.2
+        font.size <- 28
+        ano.size <- 8
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -562,6 +572,14 @@ server <- function(input, output, session) {
             p <- p + xlab(paste('Days since alignment number'))
         
         if(as.logical(these.data$exp)) {
+            
+            xval <- as.numeric(max(exp.df$date))
+            
+            yval1 <- (log10(max(exp.df$y[exp.df$ds == '1 day'])) - log10(min(exp.df$y))) * 2.6
+            yval2 <- log10(max(exp.df$y[exp.df$ds == '2 days'])) - log10(min(exp.df$y))
+            
+            #print(atan(yval1 / xval) * 180 / pi)
+            
             p <- p + geom_line(data = exp.df,
                                aes(x = date, 
                                    y = y, 
@@ -571,37 +589,39 @@ server <- function(input, output, session) {
                                size = line.size * 0.9,
                                linetype = "dashed") +
                 annotate("text",
-                         x = max(exp.df$date) * 0.99,
+                         x = xval * 0.99,
                          y = max(exp.df$y[exp.df$ds == '1 day']),
                          label = "doubling every day",
-                         size = 6,
+                         size = ano.size,
                          hjust = 1,
-                         vjust = 0,
+                         vjust = -0.2,
+                         #angle = atan(yval1 / xval) * 180 / pi,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
-                         x = max(exp.df$date),
+                         x = xval,
                          y = max(exp.df$y[exp.df$ds == '2 days']),
                          label = "doubling every 2 days",
-                         size = 5.5,
+                         size = ano.size * 0.95,
                          hjust = 1,
-                         vjust = -0.25,
+                         vjust = -0.6,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
                          y = max(exp.df$y[exp.df$ds == '3 days']),
                          label = "doubling every 3 days",
-                         size = 5,
+                         size = ano.size * 0.9,
                          hjust = 1,
-                         vjust = -0.25,
+                         vjust = -0.65,
+                         angle = 15,
                          color = 'gray',
                          alpha = 1) +
                 annotate("text",
                          x = max(exp.df$date),
                          y = max(exp.df$y[exp.df$ds == '5 days']),
                          label = "doubling every 5 days",
-                         size = 4.5,
+                         size = ano.size * 0.85,
                          hjust = 1,
                          vjust = -0.25,
                          color = 'gray',
@@ -610,7 +630,7 @@ server <- function(input, output, session) {
                          x = max(exp.df$date),
                          y = max(exp.df$y[exp.df$ds == '7 days']),
                          label = "doubling every 7 days",
-                         size = 4,
+                         size = ano.size * 0.8,
                          hjust = 1,
                          vjust = -0.25,
                          color = 'gray',
