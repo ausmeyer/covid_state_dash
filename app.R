@@ -242,6 +242,62 @@ server <- function(input, output, session) {
         line.size <- 1.25
         font.size <- 16
         
+        if(as.logical(these.data$exp)) {
+            p <- p + geom_line(data = exp.df,
+                               aes(x = date, 
+                                   y = y, 
+                                   group = ds), 
+                               color = 'gray',
+                               alpha = 0.8,
+                               size = line.size * 0.9,
+                               linetype = "dashed") +
+                annotate("text",
+                         x = max(exp.df$date) * 0.99,
+                         y = max(exp.df$y[exp.df$ds == '1 day']),
+                         label = "doubling every day",
+                         size = 6,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '2 days']),
+                         label = "doubling every 2 days",
+                         size = 5.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '3 days']),
+                         label = "doubling every 3 days",
+                         size = 5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '5 days']),
+                         label = "doubling every 5 days",
+                         size = 4.5,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '7 days']),
+                         label = "doubling every 7 days",
+                         size = 4,
+                         hjust = 1,
+                         vjust = -0.25,
+                         color = 'gray',
+                         alpha = 1)
+        }
+        
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
         
@@ -338,65 +394,8 @@ server <- function(input, output, session) {
                                        alpha = 0.75)
         }
         
-        
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
-        
-        if(as.logical(these.data$exp)) {
-            p <- p + geom_line(data = exp.df,
-                               aes(x = date, 
-                                   y = y, 
-                                   group = ds), 
-                               color = 'gray',
-                               alpha = 0.8,
-                               size = line.size * 0.9,
-                               linetype = "dashed") +
-                annotate("text",
-                         x = max(exp.df$date) * 0.99,
-                         y = max(exp.df$y[exp.df$ds == '1 day']),
-                         label = "doubling every day",
-                         size = 6,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '2 days']),
-                         label = "doubling every 2 days",
-                         size = 5.5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '3 days']),
-                         label = "doubling every 3 days",
-                         size = 5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '5 days']),
-                         label = "doubling every 5 days",
-                         size = 4.5,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '7 days']),
-                         label = "doubling every 7 days",
-                         size = 4,
-                         hjust = 1,
-                         vjust = -0.25,
-                         color = 'gray',
-                         alpha = 1)
-        }
         
         if(s == 'positive')
             p <- p + ylab('Number of COVID-19 positive tests')
@@ -475,6 +474,71 @@ server <- function(input, output, session) {
         line.size <- 2.2
         font.size <- 28
         ano.size <- 8
+        
+        if(as.logical(these.data$exp)) {
+            
+            xval <- as.numeric(max(exp.df$date))
+            
+            yval1 <- (log10(max(exp.df$y[exp.df$ds == '1 day'])) - log10(min(exp.df$y))) * 2.6
+            yval2 <- log10(max(exp.df$y[exp.df$ds == '2 days'])) - log10(min(exp.df$y))
+            
+            #print(atan(yval1 / xval) * 180 / pi)
+            
+            p <- p + geom_line(data = exp.df,
+                               aes(x = date, 
+                                   y = y, 
+                                   group = ds), 
+                               color = 'gray',
+                               alpha = 0.8,
+                               size = line.size * 0.9,
+                               linetype = "dashed") +
+                annotate("text",
+                         x = xval,
+                         y = max(exp.df$y[exp.df$ds == '1 day']),
+                         label = "doubling every day",
+                         size = ano.size,
+                         hjust = 1,
+                         vjust = 0,
+                         #angle = atan(yval1 / xval) * 180 / pi,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = xval,
+                         y = max(exp.df$y[exp.df$ds == '2 days']),
+                         label = "doubling every 2 days",
+                         size = ano.size * 0.95,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '3 days']),
+                         label = "doubling every 3 days",
+                         size = ano.size * 0.9,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '5 days']),
+                         label = "doubling every 5 days",
+                         size = ano.size * 0.85,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1) +
+                annotate("text",
+                         x = max(exp.df$date),
+                         y = max(exp.df$y[exp.df$ds == '7 days']),
+                         label = "doubling every 7 days",
+                         size = ano.size * 0.8,
+                         hjust = 1,
+                         vjust = 0,
+                         color = 'gray',
+                         alpha = 1)
+        }
         
         if(these.data$transformation != 'none')
             p <- p + scale_y_continuous(trans = these.data$transformation)
@@ -611,71 +675,6 @@ server <- function(input, output, session) {
         
         if(as.logical(these.data$align))
             p <- p + xlab(paste('Days since alignment number'))
-        
-        if(as.logical(these.data$exp)) {
-            
-            xval <- as.numeric(max(exp.df$date))
-            
-            yval1 <- (log10(max(exp.df$y[exp.df$ds == '1 day'])) - log10(min(exp.df$y))) * 2.6
-            yval2 <- log10(max(exp.df$y[exp.df$ds == '2 days'])) - log10(min(exp.df$y))
-            
-            #print(atan(yval1 / xval) * 180 / pi)
-            
-            p <- p + geom_line(data = exp.df,
-                               aes(x = date, 
-                                   y = y, 
-                                   group = ds), 
-                               color = 'gray',
-                               alpha = 0.8,
-                               size = line.size * 0.9,
-                               linetype = "dashed") +
-                annotate("text",
-                         x = xval,
-                         y = max(exp.df$y[exp.df$ds == '1 day']),
-                         label = "doubling every day",
-                         size = ano.size,
-                         hjust = 1,
-                         vjust = 0,
-                         #angle = atan(yval1 / xval) * 180 / pi,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = xval,
-                         y = max(exp.df$y[exp.df$ds == '2 days']),
-                         label = "doubling every 2 days",
-                         size = ano.size * 0.95,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '3 days']),
-                         label = "doubling every 3 days",
-                         size = ano.size * 0.9,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '5 days']),
-                         label = "doubling every 5 days",
-                         size = ano.size * 0.85,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'gray',
-                         alpha = 1) +
-                annotate("text",
-                         x = max(exp.df$date),
-                         y = max(exp.df$y[exp.df$ds == '7 days']),
-                         label = "doubling every 7 days",
-                         size = ano.size * 0.8,
-                         hjust = 1,
-                         vjust = 0,
-                         color = 'gray',
-                         alpha = 1)
-        }
         
         if(s == 'positive')
             p <- p + ylab('Number of COVID-19 positive tests')
