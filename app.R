@@ -69,6 +69,7 @@ doubling_time <- function(N0, d0, ts) {
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    tags$head(includeHTML(("google-analytics.html"))),
     useShinyjs(),
     
     # Application title
