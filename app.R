@@ -80,7 +80,7 @@ ui <- fluidPage(
         sidebarPanel(width = 4,
                      div(style = 'margin-top: -15px; margin-bottom: -15px',
                          fluidRow(
-                             column(6,
+                             column(12,
                                     pickerInput("stateChoice", 
                                                 h4("States"), 
                                                 options = list(`actions-box` = TRUE),
@@ -89,13 +89,28 @@ ui <- fluidPage(
                                                 selected = all.choices
                                     )
                              ),
-                             column(6,
+                             column(12,
                                     pickerInput("highlightSet", 
-                                                h4("Highlights"), 
-                                                options = list(`actions-box` = TRUE),
+                                                h4("Highlighted States"), 
                                                 multiple = TRUE,
                                                 choices = all.choices,
                                                 selected = NULL)
+                             )
+                         ),
+                         fluidRow(
+                             column(6,
+                                    radioButtons("fitChoice", 
+                                                 h4("Fit"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
+                             ),
+                             column(6,
+                                    radioButtons("exponentials", 
+                                                 h4("Guide"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
                              )
                          ),
                          fluidRow(
@@ -122,34 +137,26 @@ ui <- fluidPage(
                                     )
                              ),
                              column(6,
-                                    numericInput("num_align", 
-                                                 h4("Align Number"), 
-                                                 value = 0)
-                             ) 
-                         ),
-                         fluidRow(
-                             column(6,
                                     radioButtons("facet", 
                                                  h4("Facet"), 
                                                  choices = list('Yes' = T, 'No' = F),
                                                  selected = list('No' = F)
                                     )
-                             ),
-                             column(6,
-                                    radioButtons("exponentials", 
-                                                 h4("Doubling"), 
-                                                 choices = list('Yes' = T, 'No' = F),
-                                                 selected = list('No' = F)
-                                    )
                              )
-                             
+                         ),
+                         fluidRow(
+                             column(12,
+                                    numericInput("num_align", 
+                                                 h4("Align on Number"), 
+                                                 value = 0)
+                             ) 
                          ),
                      )
         ),
         # Show a plot of the generated distribution
         mainPanel(width = 8,
                   tabsetPanel(type = "tabs",
-                              tabPanel("Basic Plot", plotOutput("casesPlotPNG", height = 500) %>% withSpinner()),
+                              tabPanel("Basic Plot", plotOutput("casesPlotPNG", height = 600) %>% withSpinner()),
                               tabPanel("Interactive Plot", girafeOutput("casesPlotSVG") %>% withSpinner()),
                               tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner())
                   )
@@ -159,20 +166,16 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Charts will build automatically 1.5 seconds after changing any parameter.
-    The 'Align' option will align each state with Day 0 as the 
-    first day that each had at least 'Align Number' number of 
-    the variable you selected. The 'Facet' option will split each 
-    state into its own subplot; be careful with it because it could
-    take some time to render. The map shows the most recent day's data.
-    The y-axis transformation chosen will be applied to both the plot and the map. 
-    The doubling time guides (called 'Doubling') can only be selected when 'Align' is selected, 
-    Facet' is unselected and the Log10 y-axis is selected. The doubling time guides 
-    display as 7 dashed lines; the steepest line is doubling every 1 day and the 
-    flattest is doubling every 7 days. They are calculated with Day 0 being the mean of
-    Day 0 for all currently selected data. If Day 0 had zero cases, 1 case is substituted to calculate the 
-    doubling guide. Note, aligning correctly will significantly improve interpretability of the doubling guides.
-    The Interactive SVG might take longer to build, but will have increasing interactive features.",
+    "Charts will build automatically 1.5 seconds after changing any parameter. The States menu picks which states to include in the figure.
+    The Highlights menu will preferentially color those states and make the rest gray. The Fit and Guide options are mutually exclusive and 
+    both work with data only on highlighted states. To use Fit or Guide requires that the data be aligned, that the y-axis be log10 and 
+    that Facet is not selected. If Day 0 had zero cases, 1 case is substituted to calculate the fit and guide due to log scale. 
+    The Data menu picks the data series to be plotted. The y-axis menu picks the scale of the data; it also affects the Map. 
+    The Align option will align each state with Day 0 as the first day that each had at least 'Align on Number' number of the data you selected. 
+    The Facet option will split each state into its own subplot; be careful with it because it could take some time to render. The map shows 
+    the most recent day's data. Note, aligning correctly will significantly improve interpretability of the doubling guides. The basic and 
+    interactive plots should show the same information. The interactive plot will take longer to render so options could be selected in 
+    basic mode and then switch to interactive.",
     
     br(),br(),
     
@@ -193,6 +196,7 @@ server <- function(input, output, session) {
     renderCasesPNG <- function(these.data) {
         
         s <- these.data$series
+        
         highlights <- these.data$highlights
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
@@ -214,27 +218,29 @@ server <- function(input, output, session) {
             if(nrow(start_dates) > 1)
                 minimums <- doubling.df[order(doubling.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) doubling.df$date[doubling.df$state == start_dates$state[x]] == start_dates$start_date[x])), ]
             
-            low <- min(minimums[[s]])
-            high <- max(minimums[[s]])
-            
-            if(low == 0)
-                low <- 1
-            if(high == 0)
-                high <- 1
-            
-            start <- 10^mean(c(log10(low), log10(high)))
-            
-            date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
-            ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
-            
-            exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
-                             y = unlist(ys),
-                             ds = c(rep('2 days', length(date_seq)),
-                                    rep('3 days', length(date_seq)),
-                                    rep('5 days', length(date_seq)),
-                                    rep('7 days', length(date_seq))))
-            
-            exp.df$date <- exp.df$date - min(doubling.df$date)
+            if(as.logical(these.data$exp)) {
+                low <- min(minimums[[s]])
+                high <- max(minimums[[s]])
+                
+                if(low == 0)
+                    low <- 1
+                if(high == 0)
+                    high <- 1
+                
+                start <- 10^mean(c(log10(low), log10(high)))
+                
+                date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
+                ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
+                
+                exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
+                                 y = unlist(ys),
+                                 ds = c(rep('2 days', length(date_seq)),
+                                        rep('3 days', length(date_seq)),
+                                        rep('5 days', length(date_seq)),
+                                        rep('7 days', length(date_seq))))
+                
+                exp.df$date <- exp.df$date - min(doubling.df$date)
+            }
             
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
@@ -247,8 +253,7 @@ server <- function(input, output, session) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
         
-        p <- ggplot() +
-            ylim(min(local.df[[s]], na.rm = T), max(local.df[[s]], na.rm = T))
+        p <- ggplot()
         
         # define base sizes
         base.size <- 14
@@ -335,6 +340,70 @@ server <- function(input, output, session) {
                 )
             ) 
         
+        # Build fit if requested
+        if(as.logical(these.data$do.fit)) {
+            highlights.df <- local.df[local.df$state %in% highlights, ]
+            
+            fit.func <- function(tmp.s) {
+                if(min(tmp.s[[s]]) == 0) {
+                    t.f.df <- tibble(x = tmp.s$date, y = tmp.s[[s]] + 1)
+                    
+                    t.f <- lm(log10(y) ~ x, data = t.f.df)
+                    
+                    t.p.df <- tibble(x = t.f.df$x, 
+                                     new.y = 10^predict(t.f) - 1, 
+                                     state = tmp.s$state, 
+                                     d.t = rep(log10(2) / coef(t.f)[2], nrow(t.f.df)))
+                }
+                else {
+                    t.f.df <- tibble(x = tmp.s$date, y = tmp.s[[s]])
+                    t.f <- lm(log10(y) ~ x, data = t.f.df)
+                    
+                    t.p.df <- tibble(x = t.f.df$x, 
+                                     new.y = 10^predict(t.f), 
+                                     state = tmp.s$state, 
+                                     d.t = rep(log10(2) / coef(t.f)[2], nrow(t.f.df)))
+                }
+            }
+            
+            build.ano <- function(t.p) {
+                tmp <- t.p %>% group_by(state, d.t) %>% summarise()
+                captions <- unlist(lapply(1:nrow(tmp), function(x) paste(as.character(tmp$state[x]),
+                                                                         as.character('doubling time:'), 
+                                                                         as.character(round(tmp$d.t[x], digits = 2)),
+                                                                         'days')))
+                return(captions)
+            }
+            
+            predicted.df <- tibble(x = numeric(), new.y = numeric(), state = character(), d.t = numeric())
+            lapply(highlights.df$state, function(x) predicted.df <<- rbind(predicted.df, 
+                                                                           fit.func(highlights.df[highlights.df$state == x, ])))
+            
+            dist <- log10(max(local.df[[s]])) - log10(0.93 * (max(local.df[[s]])))
+
+            lseq <- unlist(lapply(1:length(unique(predicted.df$state)), 
+                                  function(x) (log10(max(local.df[[s]])) - 
+                                                   log10(max(local.df[[s]])) * x * dist)))
+            
+            lseq <- rescale(lseq, 
+                            to = c(ifelse(log10(min(local.df[[s]])) < 0, 0, log10(min(local.df[[s]]))), log10(max(local.df[[s]]))), 
+                            from = c(1, log10(max(local.df[[s]]))))
+            
+            p <- p + geom_line(data = predicted.df,
+                               aes(x = x, 
+                                   y = new.y,
+                                   color = state), 
+                               alpha = 0.8,
+                               size = line.size * 0.9) +
+                annotate('text', 
+                         x = min(predicted.df$x), 
+                         y = 10^(lseq + 2*dist),
+                         label = build.ano(predicted.df),
+                         vjust = 1,
+                         hjust = 0,
+                         size = 5)
+        }
+        
         if(as.logical(these.data$exp)) {
             p <- p + geom_line(data = exp.df,
                                aes(x = date, 
@@ -400,12 +469,12 @@ server <- function(input, output, session) {
                                size = line.size,
                                alpha = 0.8) + 
                 geom_point(data = highlights.df,
-                                       aes(x = date, 
-                                           y = .data[[s]], 
-                                           color = state,
-                                           fill = state),
-                                       size = point.size,
-                                       alpha = 0.9)
+                           aes(x = date, 
+                               y = .data[[s]], 
+                               color = state,
+                               fill = state),
+                           size = point.size,
+                           alpha = 0.9)
         }
         
         if(as.logical(these.data$align))
@@ -440,47 +509,51 @@ server <- function(input, output, session) {
     renderCasesSVG <- function(these.data) {
         
         s <- these.data$series
+        
         highlights <- these.data$highlights
         
         local.df <- state.df[state.df$state %in% these.data$state, ]
         
         if(as.logical(these.data$align)) {
+            
             start_dates <- local.df %>% 
                 group_by(state) %>% 
                 summarise(start_date = min(date[.data[[s]] >= as.numeric(these.data$num_align)], na.rm = TRUE))
             
             if(nrow(start_dates) > 1)
-                local.df <- local.df[order(local.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
+                local.df <- local.df[order(local.df$state), ][unlist(sapply(1:nrow(start_dates), function(x) local.df$date[local.df$state == start_dates$state[x]] >= start_dates$start_date[x])), ]
             
             doubling.df <- local.df
             
             if(length(highlights) > 0)
                 doubling.df <- local.df[local.df$state %in% highlights, ]
-                
+            
             if(nrow(start_dates) > 1)
                 minimums <- doubling.df[order(doubling.df$state), ][unlist(lapply(1:nrow(start_dates), function(x) doubling.df$date[doubling.df$state == start_dates$state[x]] == start_dates$start_date[x])), ]
             
-            low <- min(minimums[[s]])
-            high <- max(minimums[[s]])
-            
-            if(low == 0)
-                low <- 1
-            if(high == 0)
-                high <- 1
-            
-            start <- 10^mean(c(log10(low), log10(high)))
-            
-            date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
-            ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
-            
-            exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
-                             y = unlist(ys),
-                             ds = c(rep('2 days', length(date_seq)),
-                                    rep('3 days', length(date_seq)),
-                                    rep('5 days', length(date_seq)),
-                                    rep('7 days', length(date_seq))))
-            
-            exp.df$date <- exp.df$date - min(doubling.df$date)
+            if(as.logical(these.data$exp)) {
+                low <- min(minimums[[s]])
+                high <- max(minimums[[s]])
+                
+                if(low == 0)
+                    low <- 1
+                if(high == 0)
+                    high <- 1
+                
+                start <- 10^mean(c(log10(low), log10(high)))
+                
+                date_seq <- 0:(max(doubling.df$date) - min(doubling.df$date))
+                ys <- lapply(c(2, 3, 5, 7), function(x) doubling_time(start, x, date_seq))
+                
+                exp.df <- tibble(date = rep(min(doubling.df$date) + days(date_seq), 4),
+                                 y = unlist(ys),
+                                 ds = c(rep('2 days', length(date_seq)),
+                                        rep('3 days', length(date_seq)),
+                                        rep('5 days', length(date_seq)),
+                                        rep('7 days', length(date_seq))))
+                
+                exp.df$date <- exp.df$date - min(doubling.df$date)
+            }
             
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
@@ -493,8 +566,7 @@ server <- function(input, output, session) {
             sapply(names(local.colors), function(x) if(!(x %in% highlights)) {local.colors[x] <<- '#DEDEDE'})
         }
         
-        p <- ggplot() +
-            ylim(min(local.df[[s]], na.rm = T), max(local.df[[s]], na.rm = T))
+        p <- ggplot()
         
         # define base sizes
         base.size <- 22
@@ -576,8 +648,8 @@ server <- function(input, output, session) {
             this.list <- unlist(lapply(1:nrow(dat), function(i) paste('state:', dat$state[i], '\n', 
                                                                       'day:', dat$date[i], '\n',
                                                                       tooltip.label, as.character(dat[[s]][i]))
-                                       )
-                                )
+            )
+            )
             return(this.list)
         }
         
@@ -616,6 +688,70 @@ server <- function(input, output, session) {
                     )
                 )
             )
+        
+        # Build fit if requested
+        if(as.logical(these.data$do.fit)) {
+            highlights.df <- local.df[local.df$state %in% highlights, ]
+            
+            fit.func <- function(tmp.s) {
+                if(min(tmp.s[[s]]) == 0) {
+                    t.f.df <- tibble(x = tmp.s$date, y = tmp.s[[s]] + 1)
+                    
+                    t.f <- lm(log10(y) ~ x, data = t.f.df)
+                    
+                    t.p.df <- tibble(x = t.f.df$x, 
+                                     new.y = 10^predict(t.f) - 1, 
+                                     state = tmp.s$state, 
+                                     d.t = rep(log10(2) / coef(t.f)[2], nrow(t.f.df)))
+                }
+                else {
+                    t.f.df <- tibble(x = tmp.s$date, y = tmp.s[[s]])
+                    t.f <- lm(log10(y) ~ x, data = t.f.df)
+                    
+                    t.p.df <- tibble(x = t.f.df$x, 
+                                     new.y = 10^predict(t.f), 
+                                     state = tmp.s$state, 
+                                     d.t = rep(log10(2) / coef(t.f)[2], nrow(t.f.df)))
+                }
+            }
+            
+            build.ano <- function(t.p) {
+                tmp <- t.p %>% group_by(state, d.t) %>% summarise()
+                captions <- unlist(lapply(1:nrow(tmp), function(x) paste(as.character(tmp$state[x]),
+                                                                         as.character('doubling time:'), 
+                                                                         as.character(round(tmp$d.t[x], digits = 2)),
+                                                                         'days')))
+                return(captions)
+            }
+            
+            predicted.df <- tibble(x = numeric(), new.y = numeric(), state = character(), d.t = numeric())
+            lapply(highlights.df$state, function(x) predicted.df <<- rbind(predicted.df, 
+                                                                           fit.func(highlights.df[highlights.df$state == x, ])))
+            
+            dist <- log10(max(local.df[[s]])) - log10(0.94 * (max(local.df[[s]])))
+            
+            lseq <- unlist(lapply(1:length(unique(predicted.df$state)), 
+                                  function(x) (log10(max(local.df[[s]])) - 
+                                                   log10(max(local.df[[s]])) * x * dist)))
+            
+            lseq <- rescale(lseq, 
+                            to = c(ifelse(log10(min(local.df[[s]])) < 0, 0, log10(min(local.df[[s]]))), log10(max(local.df[[s]]))), 
+                            from = c(1, log10(max(local.df[[s]]))))
+            
+            p <- p + geom_line(data = predicted.df,
+                               aes(x = x, 
+                                   y = new.y,
+                                   color = state), 
+                               alpha = 0.8,
+                               size = line.size * 0.9) +
+                annotate('text', 
+                         x = min(predicted.df$x), 
+                         y = 10^(lseq + 2*dist),
+                         label = build.ano(predicted.df),
+                         vjust = 1,
+                         hjust = 0,
+                         size = ano.size)
+        }
         
         if(as.logical(these.data$exp)) {
             
@@ -812,6 +948,7 @@ server <- function(input, output, session) {
     inputData <- reactive({
         these.data = list(state = input$stateChoice,
                           series = input$seriesChoice,
+                          do.fit = input$fitChoice,
                           transformation = input$transformation,
                           highlights = input$highlightSet,
                           align = input$align,
@@ -823,13 +960,31 @@ server <- function(input, output, session) {
     
     observe({
         inputData()
-        if(as.logical(input$facet) | input$transformation == 'none' | !as.logical(input$align)) {
+        if(as.logical(input$facet) | input$transformation == 'none' | !as.logical(input$align) | as.logical(input$fitChoice)) {
             updateRadioButtons(session, "exponentials",
                                selected = list('No' = F))
         }
     })
     
-    observe(shinyjs::toggleState("exponentials", input$transformation == 'log10' & input$facet == 'FALSE' & input$align == 'TRUE'))
+    observe({
+        inputData()
+        if(as.logical(input$facet) | input$transformation == 'none' | !as.logical(input$align) | as.logical(input$exponentials)) {
+            updateRadioButtons(session, "fitChoice",
+                               selected = list('No' = F))
+        }
+    })
+    
+    observe(shinyjs::toggleState("fitChoice", 
+                                 input$transformation == 'log10' & 
+                                     input$facet == 'FALSE' & 
+                                     input$align == 'TRUE' &
+                                     input$exponentials == 'FALSE'))
+    
+    observe(shinyjs::toggleState("exponentials", 
+                                 input$transformation == 'log10' & 
+                                     input$facet == 'FALSE' & 
+                                     input$align == 'TRUE' &
+                                     input$fitChoice == 'FALSE'))
     
     output$casesPlotPNG <- renderPlot(renderCasesPNG(inputData()))
     output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(inputData()),
