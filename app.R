@@ -21,6 +21,7 @@ library(shinycssloaders)
 library(sf)
 library(albersusa)
 library(directlabels)
+library(hues)
 
 options(spinner.color="#3e5fff")
 
@@ -56,12 +57,71 @@ all.transformations <- list('Linear' = 'none',
 state.df <- read_csv('http://covidtracking.com/api/states/daily.csv')
 state.df$dateChecked <- date(state.df$dateChecked)
 state.df$date <- ymd(state.df$date)
+input.settings <- c()
 
 us_sf <- usa_sf("laea")
 
-colors <- viridis_pal()(length(unique(state.df$state)))
+#colors <- viridis_pal()(length(unique(state.df$state)))
+default.colors <- c("#43b9d5",
+                    "#d34336",
+                    "#41c464",
+                    "#a95bdb",
+                    "#62c649",
+                    "#6463e5",
+                    "#a4be2e",
+                    "#bc37ad",
+                    "#5da225",
+                    "#eb69db",
+                    "#328634",
+                    "#e5339b",
+                    "#4cc07b",
+                    "#e3325e",
+                    "#65c699",
+                    "#9356bd",
+                    "#cbb43f",
+                    "#4a6bdb",
+                    "#dd9a35",
+                    "#5e60bf",
+                    "#92ba5b",
+                    "#8386ed",
+                    "#658125",
+                    "#d284e1",
+                    "#4c9157",
+                    "#cb4f97",
+                    "#52c8ba",
+                    "#d54c79",
+                    "#3d9d7d",
+                    "#a4509b",
+                    "#988625",
+                    "#458ee8",
+                    "#db6c2e",
+                    "#356ab0",
+                    "#a66628",
+                    "#9792e2",
+                    "#a1aa64",
+                    "#7462b1",
+                    "#8eba82",
+                    "#805b92",
+                    "#577741",
+                    "#de8cc1",
+                    "#307554",
+                    "#b35254",
+                    "#329495",
+                    "#ea8d77",
+                    "#69aae1",
+                    "#7d7336",
+                    "#bca8e4",
+                    "#d2a46d",
+                    "#407aaa",
+                    "#a06647",
+                    "#6d75ae",
+                    "#e18b9d",
+                    "#a881bb",
+                    "#a4597a")
+
 colors.list <- list()
-sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- colors[x])
+sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- default.colors[x])
+
 
 doubling_time <- function(N0, d0, ts) {
     N0 * 2 ^ (ts / d0)
@@ -78,7 +138,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(width = 4,
-                     div(style = 'margin-top: -15px; margin-bottom: -15px',
+                     div(style = 'margin-top: -15px; margin-bottom: -5px',
                          fluidRow(
                              column(12,
                                     pickerInput("stateChoice", 
@@ -149,8 +209,15 @@ ui <- fluidPage(
                                     numericInput("num_align", 
                                                  h4("Align on Number"), 
                                                  value = 0)
-                             ) 
+                             )
                          ),
+                         fluidRow(
+                             align = 'center',
+                             column(12,
+                                    actionButton('shuffle_colors',
+                                                 'Shuffle Colors'),
+                             )
+                         )
                      )
         ),
         # Show a plot of the generated distribution
@@ -193,7 +260,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     
-    renderCasesPNG <- function(these.data) {
+    renderCasesPNG <- function(these.data, these.colors) {
         
         s <- these.data$series
         
@@ -245,7 +312,7 @@ server <- function(input, output, session) {
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
         
-        local.colors <- unlist(colors.list[unique(local.df$state)])
+        local.colors <- unlist(these.colors[unique(local.df$state)])
         if(length(local.colors) == 0)
             local.colors <- colors[1]
         
@@ -380,7 +447,7 @@ server <- function(input, output, session) {
                                                                            fit.func(highlights.df[highlights.df$state == x, ])))
             
             dist <- log10(max(local.df[[s]])) - log10(0.93 * (max(local.df[[s]])))
-
+            
             lseq <- unlist(lapply(1:length(unique(predicted.df$state)), 
                                   function(x) (log10(max(local.df[[s]])) - 
                                                    log10(max(local.df[[s]])) * x * dist)))
@@ -506,7 +573,7 @@ server <- function(input, output, session) {
         return(p)
     }
     
-    renderCasesSVG <- function(these.data) {
+    renderCasesSVG <- function(these.data, these.colors) {
         
         s <- these.data$series
         
@@ -558,7 +625,7 @@ server <- function(input, output, session) {
             local.df <- local.df %>% group_by(state) %>% mutate(date = date - min(date))
         }
         
-        local.colors <- unlist(colors.list[unique(local.df$state)])
+        local.colors <- unlist(these.colors[unique(local.df$state)])
         if(length(local.colors) == 0)
             local.colors <- colors[1]
         
@@ -945,18 +1012,22 @@ server <- function(input, output, session) {
         return(p)
     }
     
-    inputData <- reactive({
-        these.data = list(state = input$stateChoice,
-                          series = input$seriesChoice,
-                          do.fit = input$fitChoice,
-                          transformation = input$transformation,
-                          highlights = input$highlightSet,
-                          align = input$align,
-                          num_align = input$num_align,
-                          facet = input$facet,
-                          exp = input$exponentials,
-                          output = input$output)
-    }) %>% debounce(1500)
+    shuffleColors <- eventReactive(input$shuffle_colors, {
+        new.cols <<- iwanthue(length(unique(state.df$state)), random = T)
+        sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- new.cols[x])
+    })
+    
+    inputData <- isolate({reactive({
+        input.settings <<- list(state = input$stateChoice,
+                                series = input$seriesChoice,
+                                do.fit = input$fitChoice,
+                                transformation = input$transformation,
+                                highlights = input$highlightSet,
+                                align = input$align,
+                                num_align = input$num_align,
+                                facet = input$facet,
+                                exp = input$exponentials)
+    }) %>% debounce(1500)})
     
     observe({
         inputData()
@@ -986,12 +1057,25 @@ server <- function(input, output, session) {
                                      input$align == 'TRUE' &
                                      input$fitChoice == 'FALSE'))
     
-    output$casesPlotPNG <- renderPlot(renderCasesPNG(inputData()))
-    output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(inputData()),
-                                               width_svg = 20,
-                                               height_svg = 20 * 5 / 7,
-                                               options = list(opts_selection(type = "single", only_shiny = FALSE))))
-    output$mapPlot <- renderPlot(renderMap(inputData()))
+    observe({
+        inputData()
+        output$casesPlotPNG <- renderPlot(renderCasesPNG(input.settings, colors.list))
+        output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(input.settings, colors.list),
+                                                   width_svg = 20,
+                                                   height_svg = 20 * 5 / 7,
+                                                   options = list(opts_selection(type = "single", only_shiny = FALSE))))
+        output$mapPlot <- renderPlot(renderMap(input.settings))
+    })
+    
+    observe({
+        shuffleColors()
+        output$casesPlotPNG <- renderPlot(renderCasesPNG(input.settings, colors.list))
+        output$casesPlotSVG <- renderGirafe(girafe(ggobj = renderCasesSVG(input.settings, colors.list),
+                                                   width_svg = 20,
+                                                   height_svg = 20 * 5 / 7,
+                                                   options = list(opts_selection(type = "single", only_shiny = FALSE))))
+        output$mapPlot <- renderPlot(renderMap(input.settings))
+    })
 }
 
 # Run the application 
