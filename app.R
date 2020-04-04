@@ -39,17 +39,17 @@ all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","Americ
                     "Vermont" = "VT", "Washington" = "WA", "Wisconsin" = "WI", "West Virginia" = "WV", "Wyoming" = "WY"
 )
 
-all.series <- list('Confirmed Positive' = 'positive', 
-                   'Daily Increase in Positives' = 'positiveIncrease',
-                   'Confirmed Negative' = 'negative', 
-                   'Daily Increase in Negatives' = 'negativeIncrease',
-                   'Hospitalized' = 'hospitalized', 
-                   'Daily Increase in Hospitalizations' = 'hospitalizedIncrease',
-                   'Deaths' = 'death', 
-                   'Daily Increase in Deaths' = 'deathIncrease',
+all.series <- list('Total Cases' = 'positive', 
+                   'Increase in Cases' = 'positiveIncrease',
+                   'Total Negatives' = 'negative', 
+                   'Increase in Negatives' = 'negativeIncrease',
+                   'Total Hospitalizations' = 'hospitalized', 
+                   'Increase in Hospitalizations' = 'hospitalizedIncrease',
+                   'Total Deaths' = 'death', 
+                   'Increase in Deaths' = 'deathIncrease',
                    'Total Tests' = 'totalTestResults',
-                   'Daily Increase in Tests' = 'totalTestResultsIncrease',
-                   'Pending Tests' = 'pending')
+                   'Increase in Cases' = 'totalTestResultsIncrease',
+                   'Total Pending' = 'pending')
 
 all.transformations <- list('Linear' = 'none', 
                             'Log10' = 'log10')
@@ -225,7 +225,7 @@ ui <- fluidPage(
                   tabsetPanel(type = "tabs",
                               tabPanel("Basic Plot", plotOutput("casesPlotPNG", height = 600) %>% withSpinner()),
                               tabPanel("Interactive Plot", girafeOutput("casesPlotSVG") %>% withSpinner()),
-                              tabPanel('Map', plotOutput("mapPlot", height = 500) %>% withSpinner())
+                              tabPanel('Map', girafeOutput("mapPlot") %>% withSpinner())
                   )
         )
     ),
@@ -689,27 +689,27 @@ server <- function(input, output, session) {
         
         tooltip.label <- ''
         if(s == 'positive')
-            tooltip.label <- 'cases:'
+            tooltip.label <- 'Total Cases:'
         if(s == 'negative')
-            tooltip.label <- 'negative tests:'
+            tooltip.label <- 'Total Negatives:'
         if(s == 'pending')
-            tooltip.label <- 'pending tests:'
+            tooltip.label <- 'Total Pending:'
         if(s == 'hospitalized')
-            tooltip.label <- 'hospitalized'
+            tooltip.label <- 'Total Hospitalizations:'
         if(s == 'death')
-            tooltip.label <- 'deaths'
+            tooltip.label <- 'Total Deaths:'
         if(s == 'totalTestResults')
-            tooltip.label <- 'total tests:'
+            tooltip.label <- 'Total Test:'
         if(s == 'positiveIncrease')
-            tooltip.label <- 'positive increase:'
+            tooltip.label <- 'Increase in Cases:'
         if(s == 'negativeIncrease')
-            tooltip.label <- 'negative increase:'
+            tooltip.label <- 'Increase in Negatives:'
         if(s == 'hospitalizedIncrease')
-            tooltip.label <- 'hospitalized increase:'
+            tooltip.label <- 'Increase in Hospitalizations:'
         if(s == 'deathIncrease')
-            tooltip.label <- 'death increase:'
+            tooltip.label <- 'Increase in Deaths:'
         if(s == 'totalTestResultsIncrease')
-            tooltip.label <- 'total tests increase:'
+            tooltip.label <- 'Increase in Tests:'
         
         tooltip.func <- function(dat) {
             this.list <- unlist(lapply(1:nrow(dat), function(i) paste('state:', dat$state[i], '\n', 
@@ -943,6 +943,7 @@ server <- function(input, output, session) {
         todays.state.df <- state.df[state.df$hash %in% most_recent_hash, ]
         todays.state.df <- todays.state.df[match(as.character(us_sf$iso_3166_2), todays.state.df$state), ]
         us_sf <- bind_cols(us_sf, todays.state.df)
+        us_sf$mid <- us_sf$geometry
         
         if(s == 'positive')
             this.legend.title <- 'Number of COVID-19 positive tests'
@@ -967,14 +968,48 @@ server <- function(input, output, session) {
         if(s == 'totalTestResultsIncrease')
             this.legend.title <- "Today's increase in number of COVID-19 tests run"
         
-        p <- ggplot(us_sf, aes(fill = .data[[s]])) + 
-            geom_sf(color = "white") +
-            theme_map(10) +
+        if(s == 'positive')
+            tooltip.label <- 'Total Cases:'
+        if(s == 'negative')
+            tooltip.label <- 'Total Negatives:'
+        if(s == 'pending')
+            tooltip.label <- 'Total Pending:'
+        if(s == 'hospitalized')
+            tooltip.label <- 'Total Hospitalizations:'
+        if(s == 'death')
+            tooltip.label <- 'Total Deaths:'
+        if(s == 'totalTestResults')
+            tooltip.label <- 'Total Test Results:'
+        if(s == 'positiveIncrease')
+            tooltip.label <- 'Cases Today:'
+        if(s == 'negativeIncrease')
+            tooltip.label <- 'Negatives Today:'
+        if(s == 'hospitalizedIncrease')
+            tooltip.label <- 'Hospitalizations Today:'
+        if(s == 'deathIncrease')
+            tooltip.label <- 'Deaths Today:'
+        if(s == 'totalTestResultsIncrease')
+            tooltip.label <- 'Test Results Today:'
+        
+        tooltip.func <- function(dat) {
+            this.list <- unlist(lapply(1:nrow(dat), function(i) paste(dat$name[i], '\n', 
+                                                                      tooltip.label, as.character(dat[[s]][i]))))
+            return(this.list)
+        }
+        
+        p <- ggplot(us_sf) + 
+            geom_sf(colour = "white") +
+            geom_sf_interactive(aes(geometry = mid,
+                                    fill = .data[[s]],
+                                    data_id = state,
+                                    tooltip = tooltip.func(us_sf))
+            ) +
+            theme_map(24) +
             theme(
                 legend.title.align = 0.5,
                 legend.text.align = 0.5,
                 legend.justification = c(0, 0),
-                legend.position = c(0.4, 0.0)
+                legend.position = c(0.6, 0.0)
             ) +
             labs(fill = this.legend.title)
         
@@ -988,8 +1023,8 @@ server <- function(input, output, session) {
                     direction = "horizontal",
                     label.position = "bottom",
                     title.position = "top",
-                    barwidth = grid::unit(4.0, "in"),
-                    barheight = grid::unit(0.2, "in")
+                    barwidth = grid::unit(6.0, "in"),
+                    barheight = grid::unit(0.6, "in")
                 )
             )
         
@@ -1004,8 +1039,8 @@ server <- function(input, output, session) {
                     direction = "horizontal",
                     label.position = "bottom",
                     title.position = "top",
-                    barwidth = grid::unit(4.0, "in"),
-                    barheight = grid::unit(0.2, "in")
+                    barwidth = grid::unit(6.0, "in"),
+                    barheight = grid::unit(0.6, "in")
                 )
             )
         
@@ -1064,7 +1099,10 @@ server <- function(input, output, session) {
                                                    width_svg = 20,
                                                    height_svg = 20 * 5 / 7,
                                                    options = list(opts_selection(type = "single", only_shiny = FALSE))))
-        output$mapPlot <- renderPlot(renderMap(input.settings))
+        output$mapPlot <- renderGirafe(girafe(ggobj = renderMap(input.settings),
+                                              width_svg = 20,
+                                              height_svg = 20 * 5 / 7,
+                                              options = list(opts_selection(type = "single", only_shiny = FALSE))))
     })
     
     observe({
@@ -1074,7 +1112,10 @@ server <- function(input, output, session) {
                                                    width_svg = 20,
                                                    height_svg = 20 * 5 / 7,
                                                    options = list(opts_selection(type = "single", only_shiny = FALSE))))
-        output$mapPlot <- renderPlot(renderMap(input.settings))
+        output$mapPlot <- renderGirafe(girafe(ggobj = renderMap(input.settings),
+                                              width_svg = 20,
+                                              height_svg = 20 * 5 / 7,
+                                              options = list(opts_selection(type = "single", only_shiny = FALSE))))
     })
 }
 
