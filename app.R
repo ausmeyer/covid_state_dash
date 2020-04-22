@@ -144,25 +144,10 @@ ui <- fluidPage(
                              column(12,
                                     pickerInput("highlightSet", 
                                                 h4("Highlighted States"), 
+                                                options = list(`actions-box` = TRUE),
                                                 multiple = TRUE,
                                                 choices = all.choices,
                                                 selected = NULL)
-                             )
-                         ),
-                         fluidRow(
-                             column(6,
-                                    radioButtons("fitChoice", 
-                                                 h4("Fit"), 
-                                                 choices = list('Yes' = T, 'No' = F),
-                                                 selected = list('No' = F)
-                                    )
-                             ),
-                             column(6,
-                                    radioButtons("exponentials", 
-                                                 h4("Guide"), 
-                                                 choices = list('Yes' = T, 'No' = F),
-                                                 selected = list('No' = F)
-                                    )
                              )
                          ),
                          fluidRow(
@@ -218,6 +203,22 @@ ui <- fluidPage(
                              )
                          ),
                          fluidRow(
+                             column(6,
+                                    radioButtons("fitChoice", 
+                                                 h4("Fit"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
+                             ),
+                             column(6,
+                                    radioButtons("exponentials", 
+                                                 h4("Guide"), 
+                                                 choices = list('Yes' = T, 'No' = F),
+                                                 selected = list('No' = F)
+                                    )
+                             )
+                         ),
+                         fluidRow(
                              align = 'center',
                              column(12,
                                     actionButton('shuffle_colors',
@@ -239,16 +240,22 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Charts will build automatically 1.5 seconds after changing any parameter. The States menu picks which states to include in the figure.
-    The Highlights menu will preferentially color those states and make the rest gray. The Fit and Guide options are mutually exclusive and 
-    both work with data only on highlighted states. To use Fit or Guide requires that the data be aligned, that the y-axis be log10 and 
-    that Facet is not selected. If Day 0 had zero cases, 1 case is substituted to calculate the fit and guide due to log scale. 
-    The Data menu picks the data series to be plotted. The y-axis menu picks the scale of the data; it also affects the Map. 
-    The Align option will align each state with Day 0 as the first day that each had at least 'Align on Number' number of the data you selected. 
-    The Facet option will split each state into its own subplot; be careful with it because it could take some time to render. The map shows 
-    the most recent day's data. Note, aligning correctly will significantly improve interpretability of the doubling guides. The basic and 
-    interactive plots should show the same information. The interactive plot will take longer to render so options could be selected in 
-    basic mode and then switch to interactive.",
+    "Charts will build automatically 1.5 seconds after changing any parameter. 
+    The States menu picks which states to include in the figure.
+    The Highlights menu will preferentially color those states and make the rest gray. 
+    The y-axis menu picks the scale of the data; it also affects the Map. 
+    The Start on Day option will start the time series that day of days from the beginning of the available data; in terms of interaction this starting would happen AFTER alignment.
+    The Smooth over Window option will plot the moving average of the time series with the selected sliding window; in terms of interaction the fits and guides would use the smoothed data. 
+    A smoothing window of 1 day is unsmoothed.
+    The Align option will align each state with Day 0 as the first day that each had at least 'Align on Number' number of the data you selected.
+    The Facet option will split each state into its own subplot; be careful with it because it could take some time to render. 
+    The Fit option will fit an exponential model to the displayed data
+    The Guide option will display the doubling time in days from the median of the displayed data.
+    The Data menu picks the data series to be plotted. 
+    The map shows the most recent day's data. 
+    Note, aligning correctly will significantly improve interpretability of the doubling guides. 
+    The basic and interactive plots should show the same information. 
+    The interactive plot could take longer to render so options could be selected in basic mode and then switch to interactive.",
     
     br(),br(),
     
@@ -801,11 +808,13 @@ server <- function(input, output, session) {
     build.plots <- function() {
         this.validate <- function() {
             validate(
+                need(input.settings$smooth > 0, 
+                     "Cannot smooth over less than 1 day."),
                 need(length(input.settings$state) > 0, 
-                     "Please select a state set"),
+                     "Please select a state set."),
                 need(all(input.settings$highlights %in% input.settings$state)  | 
                          length(input.settings$highlights) == 0, 
-                     "Please ensure highlights are in states selected"),
+                     "Please ensure highlights are in states selected."),
                 need(length(input.settings$state) != length(input.settings$highlights),
                      "No need to highlight all of the selected states Unselect highlights."),
                 need(!(as.logical(input.settings$exp) & 
