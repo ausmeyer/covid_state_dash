@@ -26,7 +26,8 @@ library('ggiraph')
 
 options(spinner.color="#3e5fff")
 
-all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","American Samoa" = "AS", "Arizona" = "AZ", 
+all.choices <- list('Total' = 'Total', 
+                    "Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","American Samoa" = "AS", "Arizona" = "AZ", 
                     "California" = "CA", "Colorado" = "CO", "Connecticut" = "CT", "District of Columbia" = "DC",
                     "Delaware" = "DE", "Florida" = "FL", "Georgia" = "GA", "Guam" = "GU", "Hawaii" = "HI", "Iowa" = "IA",
                     "Idaho" = "ID", "Illinois" = "IL", "Indiana" = "IN", "Kansas" = "KS", "Kentucky" = "KY", 
@@ -58,12 +59,30 @@ all.transformations <- list('Linear' = 'none',
 state.df <- read_csv('http://covidtracking.com/api/states/daily.csv')
 state.df$dateChecked <- date(state.df$dateChecked)
 state.df$date <- ymd(state.df$date)
+totals.df <- state.df %>%
+    group_by(date) %>%
+    summarise(state = 'Total',
+              positive = sum(positive, na.rm = T),
+              positiveIncrease = sum(positiveIncrease, na.rm = T),
+              negative = sum(negative, na.rm = T),
+              negativeIncrease = sum(negativeIncrease, na.rm = T),
+              hospitalized = sum(hospitalized, na.rm = T),
+              hospitalizedIncrease = sum(hospitalizedIncrease, na.rm = T),
+              death = sum(death, na.rm = T),
+              deathIncrease = sum(deathIncrease, na.rm = T),
+              totalTestResults = sum(totalTestResults, na.rm = T),
+              totalTestResultsIncrease = sum(totalTestResultsIncrease, na.rm = T),
+              pending = sum(pending, na.rm = T))
+
+state.df <- bind_rows(totals.df, state.df)
+    
 input.settings <- c()
 
 us_sf <- usa_sf("laea")
 
 #colors <- viridis_pal()(length(unique(state.df$state)))
-default.colors <- c("#43b9d5",
+default.colors <- c("#333333",
+                    "#43b9d5",
                     "#d34336",
                     "#41c464",
                     "#a95bdb",
@@ -123,7 +142,6 @@ default.colors <- c("#43b9d5",
 colors.list <- list()
 sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- default.colors[x])
 
-
 doubling_time <- function(N0, d0, ts) {
     N0 * 2 ^ (ts / d0)
 }
@@ -147,7 +165,7 @@ ui <- fluidPage(
                                                 options = list(`actions-box` = TRUE),
                                                 multiple = TRUE,
                                                 choices = all.choices,
-                                                selected = all.choices
+                                                selected = all.choices[-1]
                                     )
                              ),
                              column(12,
@@ -668,13 +686,13 @@ server <- function(input, output, session) {
         if(s == 'positiveIncrease')
             p <- p + ylab('Daily number of COVID-19 positive tests')
         if(s == 'negativeIncrease')
-            p <- p + ylab('Daily increase in number of COVID-19 negative tests')
+            p <- p + ylab('Daily number of COVID-19 negative tests')
         if(s == 'hospitalizedIncrease')
-            p <- p + ylab('Daily increase in number of COVID-19 hospitalized patients')
+            p <- p + ylab('Daily number of COVID-19 hospitalized patients')
         if(s == 'deathIncrease')
-            p <- p + ylab('Daily increase in number of COVID-19 deaths')
+            p <- p + ylab('Daily number of COVID-19 deaths')
         if(s == 'totalTestResultsIncrease')
-            p <- p + ylab('Daily increase in number of COVID-19 tests run')
+            p <- p + ylab('Daily number of COVID-19 tests run')
         
         return(p)
     }
