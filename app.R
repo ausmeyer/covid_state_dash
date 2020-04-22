@@ -175,16 +175,14 @@ ui <- fluidPage(
                              )
                          ),
                          fluidRow(
-                             column(12,
+                             column(6,
                                     numericInput("start", 
                                                  h5("Start on Day"), 
                                                  value = 0)
-                             )
-                         ),
-                         fluidRow(
-                             column(12,
+                             ),
+                             column(6,
                                     numericInput("smooth", 
-                                                 h5("Smooth over Window (Days)"), 
+                                                 h5("Smooth over Window"), 
                                                  value = 1)
                              )
                          ),
