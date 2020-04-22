@@ -24,8 +24,6 @@ library('hues')
 library('zoo')
 library('ggiraph')
 
-sapply(packs.to.load, require, character.only = TRUE)
-
 options(spinner.color="#3e5fff")
 
 all.choices <- list("Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","American Samoa" = "AS", "Arizona" = "AZ", 
