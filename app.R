@@ -277,7 +277,7 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Please note, most of the data fields from COVID Tracking project are available here, but some of the fields (like the aggregate number of ventilated patients) are less reliable than others.
+    "Please note, most of the data fields from COVID Tracking Project are available here, but some of the fields (like the aggregate number of ventilated patients) are less reliable than others.
     Charts will build automatically 1.5 seconds after changing any parameter. 
     The States menu picks which states to include in the figure.
     The Highlights menu will preferentially color those states and make the rest gray. 
