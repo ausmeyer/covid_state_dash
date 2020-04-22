@@ -47,10 +47,16 @@ all.series <- list('Aggregate Cases' = 'positive',
                    'Daily Negatives' = 'negativeIncrease',
                    'Aggregate Hospitalizations' = 'hospitalized', 
                    'Daily Hospitalizations' = 'hospitalizedIncrease',
+                   'Currently Hospitalized' = 'hospitalizedCurrently',
+                   'Aggregate ICU' = 'inIcuCumulative',
+                   'Currently ICU' = 'inIcuCurrently', 
+                   'Aggregate Ventilated' = 'onVentilatorCumulative',
+                   'Currently Ventilated' = 'onVentilatorCurrently',
                    'Aggregate Deaths' = 'death', 
                    'Daily Deaths' = 'deathIncrease',
+                   'Recovered' = 'recovered',
                    'Aggregate Tests' = 'totalTestResults',
-                   'Daily Cases' = 'totalTestResultsIncrease',
+                   'Daily Tests' = 'totalTestResultsIncrease',
                    'Aggregate Pending' = 'pending')
 
 all.transformations <- list('Linear' = 'none', 
@@ -68,8 +74,14 @@ totals.df <- state.df %>%
               negativeIncrease = sum(negativeIncrease, na.rm = T),
               hospitalized = sum(hospitalized, na.rm = T),
               hospitalizedIncrease = sum(hospitalizedIncrease, na.rm = T),
+              hospitalizedCurrently = sum(hospitalizedCurrently, na.rm = T),
+              inIcuCumulative = sum(inIcuCumulative, na.rm = T),
+              inIcuCurrently = sum(inIcuCurrently, na.rm = T),
+              onVentilatorCumulative = sum(onVentilatorCumulative, na.rm = T),
+              onVentilatorCurrently = sum(onVentilatorCurrently, na.rm = T),
               death = sum(death, na.rm = T),
               deathIncrease = sum(deathIncrease, na.rm = T),
+              recovered = sum(recovered, na.rm = T),
               totalTestResults = sum(totalTestResults, na.rm = T),
               totalTestResultsIncrease = sum(totalTestResultsIncrease, na.rm = T),
               pending = sum(pending, na.rm = T))
@@ -265,7 +277,8 @@ ui <- fluidPage(
     
     strong("Explanation:"),
     
-    "Charts will build automatically 1.5 seconds after changing any parameter. 
+    "Please note, most of the data fields from COVID Tracking project are available here, but some of the fields (like the aggregate number of ventilated patients) are less reliable than others.
+    Charts will build automatically 1.5 seconds after changing any parameter. 
     The States menu picks which states to include in the figure.
     The Highlights menu will preferentially color those states and make the rest gray. 
     The y-axis menu picks the scale of the data; it also affects the Map. 
