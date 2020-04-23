@@ -287,7 +287,7 @@ ui <- fluidPage(
     A smoothing window of 1 day is unsmoothed.
     The Align option will align each state with Day 0 as the first day that each had at least 'Align on Number' number of the data you selected.
     The Facet option will split each state into its own subplot; be careful with it because it could take some time to render. 
-    The Fit option will fit an exponential model to the displayed data
+    The Fit option will fit an exponential model to the displayed data.
     The Guide option will display the doubling time in days from the median of the displayed data.
     The Data menu picks the data series to be plotted. 
     The map shows the most recent day's data. 
