@@ -865,8 +865,7 @@ server <- function(input, output, session) {
                     need(input.settings$transformation == 'log10',
                          "Data must be aligned and Log10 selected to plot fits."),
                 if(as.logical(input.settings$do.fit))
-                    need(input.settings$transformation == 'log10' &
-                             as.logical(input.settings$align),
+                    need(input.settings$transformation == 'log10',
                          "Data must be aligned and Log10 selected to plot guides."),
                 if(as.logical(input.settings$do.fit) | as.logical(input.settings$exp))
                     need(!as.logical(input.settings$facet), 
