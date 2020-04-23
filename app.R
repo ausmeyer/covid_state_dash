@@ -485,7 +485,7 @@ server <- function(input, output, session) {
         }
         
         plottable.df <- local.df[!(local.df$state %in% highlights), ]
-        print(local.colors)
+
         p <- p +
             geom_line(data = plottable.df,
                       aes(x = date, 
@@ -847,6 +847,8 @@ server <- function(input, output, session) {
     build.plots <- function() {
         this.validate <- function() {
             validate(
+                need(input.settings$start >= 0, 
+                     "Cannot start on a negative day."),
                 need(input.settings$smooth > 0, 
                      "Cannot smooth over less than 1 day."),
                 need(length(input.settings$state) > 0, 
@@ -860,8 +862,7 @@ server <- function(input, output, session) {
                            as.logical(input.settings$do.fit)), 
                      "Cannot fit the data and place exponential guides. Pick one or the other."),
                 if(as.logical(input.settings$exp))
-                    need(input.settings$transformation == 'log10' &
-                             as.logical(input.settings$align),
+                    need(input.settings$transformation == 'log10',
                          "Data must be aligned and Log10 selected to plot fits."),
                 if(as.logical(input.settings$do.fit))
                     need(input.settings$transformation == 'log10' &
