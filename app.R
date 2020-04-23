@@ -93,7 +93,7 @@ input.settings <- c()
 us_sf <- usa_sf("laea")
 
 #colors <- viridis_pal()(length(unique(state.df$state)))
-default.colors <- c("#333333",
+default.colors <- c("#6B6E6F",
                     "#43b9d5",
                     "#d34336",
                     "#41c464",
@@ -485,6 +485,7 @@ server <- function(input, output, session) {
         }
         
         plottable.df <- local.df[!(local.df$state %in% highlights), ]
+        print(local.colors)
         p <- p +
             geom_line(data = plottable.df,
                       aes(x = date, 
@@ -511,7 +512,7 @@ server <- function(input, output, session) {
             ) +
             guides(
                 color = guide_legend(
-                    nrow = 28,
+                    nrow = 29,
                     override.aes = list(
                         linetype = c(rep(0, length(unique(local.df$state)))),
                         shape = c(rep(21, length(unique(local.df$state))))
