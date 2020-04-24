@@ -26,133 +26,12 @@ library('ggiraph')
 
 options(spinner.color="#3e5fff")
 
-all.choices <- list('Total' = 'Total', 
-                    "Alaska" = "AK", "Alabama" = "AL", "Arkansas" = "AR","American Samoa" = "AS", "Arizona" = "AZ", 
-                    "California" = "CA", "Colorado" = "CO", "Connecticut" = "CT", "District of Columbia" = "DC",
-                    "Delaware" = "DE", "Florida" = "FL", "Georgia" = "GA", "Guam" = "GU", "Hawaii" = "HI", "Iowa" = "IA",
-                    "Idaho" = "ID", "Illinois" = "IL", "Indiana" = "IN", "Kansas" = "KS", "Kentucky" = "KY", 
-                    "Louisiana" = "LA", "Massachusetts" = "MA", "Maryland" = "MD", "Maine" = "ME", "Michigan" = "MI", 
-                    "Minnesota" = "MN", "Missouri" = "MO", "Northern Mariana Islands" = "MP", "Mississippi" = "MS", 
-                    "Montana" = "MT", "North Carolina" = "NC", "North Dakota" = "ND", "Nebraska" = "NE", "New Hampshire" = "NH", 
-                    "New Jersey" = "NJ", "New Mexico" = "NM", "Nevada" = "NV", "New York" = "NY", "Ohio" = "OH", 
-                    "Oklahoma" = "OK", "Oregon" = "OR", "Pennsylvania" = "PA", "Puerto Rico" = "PR", "Rhode Island" = "RI", 
-                    "South Carolina" = "SC", "South Dakota" = "SD", "Tennessee" = "TN", "Texas" = "TX", 
-                    "U.S. Minor Outlying Islands" = "UM", "Utah" = "UT", "Virginia" = "VA", "U.S. Virgin Islands" = "VI",
-                    "Vermont" = "VT", "Washington" = "WA", "Wisconsin" = "WI", "West Virginia" = "WV", "Wyoming" = "WY"
-)
+suppressWarnings(source('load_colors.R'))
+suppressWarnings(source('load_choices.R'))
 
-all.series <- list('Aggregate Cases' = 'positive', 
-                   'Daily Cases' = 'positiveIncrease',
-                   'Aggregate Negatives' = 'negative', 
-                   'Daily Negatives' = 'negativeIncrease',
-                   'Aggregate Hospitalizations' = 'hospitalized', 
-                   'Daily Hospitalizations' = 'hospitalizedIncrease',
-                   'Currently Hospitalized' = 'hospitalizedCurrently',
-                   'Aggregate ICU' = 'inIcuCumulative',
-                   'Currently ICU' = 'inIcuCurrently', 
-                   'Aggregate Ventilated' = 'onVentilatorCumulative',
-                   'Currently Ventilated' = 'onVentilatorCurrently',
-                   'Aggregate Deaths' = 'death', 
-                   'Daily Deaths' = 'deathIncrease',
-                   'Recovered' = 'recovered',
-                   'Aggregate Tests' = 'totalTestResults',
-                   'Daily Tests' = 'totalTestResultsIncrease',
-                   'Aggregate Pending' = 'pending')
-
-all.transformations <- list('Linear' = 'none', 
-                            'Log10' = 'log10')
-
-state.df <- read_csv('http://covidtracking.com/api/states/daily.csv')
-state.df$dateChecked <- date(state.df$dateChecked)
-state.df$date <- ymd(state.df$date)
-totals.df <- state.df %>%
-    group_by(date) %>%
-    summarise(state = 'Total',
-              positive = sum(positive, na.rm = T),
-              positiveIncrease = sum(positiveIncrease, na.rm = T),
-              negative = sum(negative, na.rm = T),
-              negativeIncrease = sum(negativeIncrease, na.rm = T),
-              hospitalized = sum(hospitalized, na.rm = T),
-              hospitalizedIncrease = sum(hospitalizedIncrease, na.rm = T),
-              hospitalizedCurrently = sum(hospitalizedCurrently, na.rm = T),
-              inIcuCumulative = sum(inIcuCumulative, na.rm = T),
-              inIcuCurrently = sum(inIcuCurrently, na.rm = T),
-              onVentilatorCumulative = sum(onVentilatorCumulative, na.rm = T),
-              onVentilatorCurrently = sum(onVentilatorCurrently, na.rm = T),
-              death = sum(death, na.rm = T),
-              deathIncrease = sum(deathIncrease, na.rm = T),
-              recovered = sum(recovered, na.rm = T),
-              totalTestResults = sum(totalTestResults, na.rm = T),
-              totalTestResultsIncrease = sum(totalTestResultsIncrease, na.rm = T),
-              pending = sum(pending, na.rm = T))
-
-state.df <- bind_rows(totals.df, state.df)
-    
 input.settings <- c()
 
 us_sf <- usa_sf("laea")
-
-#colors <- viridis_pal()(length(unique(state.df$state)))
-default.colors <- c("#6B6E6F",
-                    "#43b9d5",
-                    "#d34336",
-                    "#41c464",
-                    "#a95bdb",
-                    "#62c649",
-                    "#6463e5",
-                    "#a4be2e",
-                    "#bc37ad",
-                    "#5da225",
-                    "#eb69db",
-                    "#328634",
-                    "#e5339b",
-                    "#4cc07b",
-                    "#e3325e",
-                    "#65c699",
-                    "#9356bd",
-                    "#cbb43f",
-                    "#4a6bdb",
-                    "#dd9a35",
-                    "#5e60bf",
-                    "#92ba5b",
-                    "#8386ed",
-                    "#658125",
-                    "#d284e1",
-                    "#4c9157",
-                    "#cb4f97",
-                    "#52c8ba",
-                    "#d54c79",
-                    "#3d9d7d",
-                    "#a4509b",
-                    "#988625",
-                    "#458ee8",
-                    "#db6c2e",
-                    "#356ab0",
-                    "#a66628",
-                    "#9792e2",
-                    "#a1aa64",
-                    "#7462b1",
-                    "#8eba82",
-                    "#805b92",
-                    "#577741",
-                    "#de8cc1",
-                    "#307554",
-                    "#b35254",
-                    "#329495",
-                    "#ea8d77",
-                    "#69aae1",
-                    "#7d7336",
-                    "#bca8e4",
-                    "#d2a46d",
-                    "#407aaa",
-                    "#a06647",
-                    "#6d75ae",
-                    "#e18b9d",
-                    "#a881bb",
-                    "#a4597a")
-
-colors.list <- list()
-sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- default.colors[x])
 
 doubling_time <- function(N0, d0, ts) {
     N0 * 2 ^ (ts / d0)
@@ -828,6 +707,13 @@ server <- function(input, output, session) {
     shuffleColors <- eventReactive(input$shuffle_colors, {
         new.cols <<- iwanthue(length(unique(state.df$state)), random = T)
         sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- new.cols[x])
+    })
+    
+    reactive({
+        # reload data every 4 hours
+        invalidateLater(1000 * 60 * 60 * 4)
+        
+        suppressWarnings(source('load_data.R'))
     })
     
     inputData <- isolate({reactive({
