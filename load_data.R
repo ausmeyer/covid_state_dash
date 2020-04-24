@@ -27,6 +27,4 @@ totals.df <- state.df %>%
 
 state.df <- bind_rows(totals.df, state.df)
 
-pop.df <- read_csv('state_pop.csv')
-
 save(state.df, file = 'data.rda')
