@@ -26,6 +26,7 @@ library('ggiraph')
 
 options(spinner.color="#3e5fff")
 
+suppressWarnings(source('load_data.R'))
 suppressWarnings(source('load_colors.R'))
 suppressWarnings(source('load_choices.R'))
 
@@ -707,13 +708,6 @@ server <- function(input, output, session) {
     shuffleColors <- eventReactive(input$shuffle_colors, {
         new.cols <<- iwanthue(length(unique(state.df$state)), random = T)
         sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- new.cols[x])
-    })
-    
-    reactive({
-        # reload data every 4 hours
-        invalidateLater(1000 * 60 * 60 * 4)
-        
-        suppressWarnings(source('load_data.R'))
     })
     
     inputData <- isolate({reactive({
