@@ -26,5 +26,3 @@ totals.df <- state.df %>%
             pending = sum(pending, na.rm = T))
 
 state.df <- bind_rows(totals.df, state.df)
-
-save(state.df, file = 'data.rda')
