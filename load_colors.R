@@ -56,7 +56,7 @@ default.colors <- c("#6B6E6F",
                     "#a881bb",
                     "#a4597a")
 
-suppressWarnings(load('data.rda'))
+suppressWarnings(source('load_data.R'))
 
 colors.list <- list()
 sapply(1:length(unique(state.df$state)), function(x) colors.list[unique(state.df$state)[x]] <<- default.colors[x])
